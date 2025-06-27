@@ -1,0 +1,74 @@
+# ================================
+# Emergency Service Locator .gitignore
+# ================================
+
+# === Dependencies ===
+node_modules/
+.pnpm-store/
+yarn-error.log
+npm-debug.log*
+
+# === Environment Variables ===
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+
+# === Build Output ===
+build/
+dist/
+out/
+.next/
+
+# === IDE & Editor ===
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# === System Files ===
+.DS_Store
+Thumbs.db
+*.log
+
+# === Testing ===
+coverage/
+.nyc_output/
+
+# === Debug ===
+debug/
+*.log
+
+# === Database ===
+*.db
+*.sqlite
+dump.rdb
+
+# === OS Specific ===
+# Windows
+[Tt]humbs.db
+Desktop.ini
+
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# === Project Specific ===
+# MongoDB data (if using local DB)
+data/db/
+mongod.log
+
+# Docker
+docker-compose.override.yml
+
+# === Optional ===
+# Uncomment if using these:
+# .cache/
+# .parcel-cache/
+# .eslintcache
