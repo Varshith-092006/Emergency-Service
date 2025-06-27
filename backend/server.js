@@ -182,4 +182,4 @@ process.on('uncaughtException', (err) => {
 
 startServer();
 
-module.exports = { app, server, io }; 
+module.exports = { app, server, io };
