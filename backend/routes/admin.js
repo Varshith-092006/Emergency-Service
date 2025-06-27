@@ -173,7 +173,7 @@ router.get('/analytics/sos', protect, requireAdmin, asyncHandler(async (req, res
 }));
 
 router.post(
-  'services/bulk-upload',
+  '/services/bulk-upload',
   protect,
   requireAdmin,
   upload.single('csv'),
