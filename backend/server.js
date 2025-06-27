@@ -24,45 +24,86 @@ const { protect, requireAdmin } = require('./middleware/auth');
 
 const app = express();
 const server = http.createServer(app);
+
+// Enhanced CORS configuration
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:5173",
+  "https://emergency-service-lilac.vercel.app",
+  process.env.CORS_ORIGIN
+].filter(Boolean);
+
+// Configure Socket.IO with enhanced CORS
 const io = socketIo(server, {
   cors: {
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:5173",
-      process.env.CORS_ORIGIN
-    ].filter(Boolean),
-    methods: ["GET", "POST"],
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true
   }
 });
 
-// Security middleware
-app.use(helmet());
+// Enhanced security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https://*.amazonaws.com"],
+      connectSrc: ["'self'", ...allowedOrigins]
+    }
+  },
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
 app.use(compression());
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   message: 'Too many requests from this IP, please try again later.'
 });
-app.use('/api/', limiter);
 
-// CORS configuration
+// Auth-specific rate limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: 'Too many login attempts, please try again later.'
+});
+
+app.use('/api/', limiter);
+app.use('/api/auth', authLimiter);
+
+// Enhanced CORS middleware
 app.use(cors({
-  origin: [
-    "http://localhost:3000",
-    "http://localhost:3001", 
-    "http://localhost:5173",
-    process.env.CORS_ORIGIN
-  ].filter(Boolean),
-  credentials: true
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`Blocked by CORS: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'X-Powered-By']
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} from ${req.headers.origin || 'no-origin'}`);
+  next();
+});
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {
@@ -80,7 +121,8 @@ app.get('/health', (req, res) => {
     status: 'OK',
     message: 'Emergency Service Locator API is running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    allowedOrigins: allowedOrigins
   });
 });
 
@@ -96,16 +138,13 @@ app.use('/api/analytics', analyticsRoutes);
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
 
-  // Join user to their location room
   socket.on('join-location', (data) => {
     const room = `location-${data.lat}-${data.lng}`;
     socket.join(room);
     console.log(`User joined room: ${room}`);
   });
 
-  // Handle SOS alerts
   socket.on('sos-alert', (data) => {
-    // Broadcast to all connected clients
     io.emit('emergency-alert', {
       type: 'sos',
       location: data.location,
@@ -114,7 +153,6 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Handle service updates
   socket.on('service-update', (data) => {
     io.emit('service-changed', data);
   });
@@ -131,7 +169,8 @@ app.use(errorHandler);
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
-    message: 'Route not found'
+    message: 'Route not found',
+    allowedOrigins: allowedOrigins
   });
 });
 
@@ -145,15 +184,30 @@ const connectDB = async () => {
       {
         useNewUrlParser: true,
         useUnifiedTopology: true,
+        retryWrites: true,
+        w: 'majority'
       }
     );
-
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error('Database connection error:', error);
     process.exit(1);
   }
 };
+
+// Validate required environment variables
+const requiredEnvVars = [
+  'MONGODB_URI',
+  'JWT_SECRET',
+  'CORS_ORIGIN'
+];
+
+requiredEnvVars.forEach(envVar => {
+  if (!process.env[envVar]) {
+    console.error(`Missing required environment variable: ${envVar}`);
+    process.exit(1);
+  }
+});
 
 // Start server
 const PORT = process.env.PORT || 5000;
@@ -164,19 +218,20 @@ const startServer = async () => {
   server.listen(PORT, () => {
     console.log(`🚨 Emergency Service Locator API running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Allowed Origins: ${allowedOrigins.join(', ')}`);
     console.log(`Health check: http://localhost:${PORT}/health`);
   });
 };
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
-  console.log(`Error: ${err.message}`);
+  console.error(`Unhandled Rejection: ${err.message}`);
   server.close(() => process.exit(1));
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  console.log(`Error: ${err.message}`);
+  console.error(`Uncaught Exception: ${err.message}`);
   process.exit(1);
 });
 
