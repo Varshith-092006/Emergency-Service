@@ -44,7 +44,7 @@ const AdminServices = () => {
 
   // Delete service mutation
   const deleteMutation = useMutation(
-    (id) => api.delete(`/admin/services/${id}`),
+    (id) => api.delete(`api/admin/services/${id}`),
     {
       onSuccess: () => {
         toast.success('Service deleted successfully');
@@ -96,7 +96,7 @@ const AdminServices = () => {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      await api.put(`/admin/services/${editingService}`, serviceForm);
+      await api.put(`api/admin/services/${editingService}`, serviceForm);
       toast.success('Service updated successfully');
       setEditingService(null);
       queryClient.invalidateQueries('admin-services');
