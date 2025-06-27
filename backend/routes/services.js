@@ -3,6 +3,9 @@ const { query, body, validationResult } = require('express-validator');
 const { asyncHandler, createValidationError, createNotFoundError } = require('../middleware/errorHandler');
 const { protect, optionalAuth, requireAdmin } = require('../middleware/auth');
 const EmergencyService = require('../models/EmergencyService');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
+
 
 const router = express.Router();
 
@@ -189,5 +192,59 @@ router.delete('/:id', protect, requireAdmin, asyncHandler(async (req, res) => {
     message: 'Emergency service deleted successfully'
   });
 }));
+
+router.post(
+  '/bulk-upload',
+  protect,
+  requireAdmin,
+  upload.single('csv'),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      throw createValidationError('file', 'CSV file is required');
+    }
+
+    const csv = require('csv-parser');
+    const fs = require('fs');
+    const results = [];
+
+    // Read and parse the CSV file
+    fs.createReadStream(req.file.path)
+      .pipe(csv())
+      .on('data', (data) => {
+        // Transform CSV data to match your schema
+        results.push({
+          name: data.name,
+          type: data.type,
+          contact: {
+            phone: data.phone
+          },
+          location: {
+            type: 'Point',
+            coordinates: [parseFloat(data.longitude || 0), parseFloat(data.latitude || 0)],
+            address: {
+              fullAddress: data.address
+            }
+          },
+          isActive: true
+        });
+      })
+      .on('end', async () => {
+        try {
+          // Insert all records
+          await EmergencyService.insertMany(results);
+          // Delete the temporary file
+          fs.unlinkSync(req.file.path);
+          
+          res.status(201).json({
+            success: true,
+            message: `${results.length} services imported successfully`
+          });
+        } catch (error) {
+          fs.unlinkSync(req.file.path);
+          throw error;
+        }
+      });
+  })
+);
 
 module.exports = router; 
