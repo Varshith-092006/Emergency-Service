@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Phone, Navigation, RefreshCw } from 'lucide-react';
+import { useLocation } from '../../contexts/LocationContext';
 
 const createCustomIcon = (type, color = '#3b82f6', isSelected = false) => {
   return L.divIcon({
