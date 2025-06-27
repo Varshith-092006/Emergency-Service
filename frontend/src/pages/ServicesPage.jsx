@@ -43,7 +43,7 @@ const ServicesPage = () => {
         params.maxDistance = radius;
       }
 
-      const res = await api.get('/services', { params });
+      const res = await api.get('api/services', { params });
       return res.data.data.services;
     }
   );

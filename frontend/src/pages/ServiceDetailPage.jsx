@@ -8,7 +8,7 @@ import MapComponent from '../components/map/MapComponent';
 const ServiceDetailPage = () => {
   const { id } = useParams();
   const { data, isLoading } = useQuery(['service', id], async () => {
-    const res = await api.get(`/services/${id}`);
+    const res = await api.get(`api/services/${id}`);
     return res.data.data.service;
   });
 
