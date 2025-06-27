@@ -68,7 +68,7 @@ const MapPage = () => {
     try {
       await Promise.all([
         sendSOSAlert(currentLocation, 'other'),
-        api.post('/sos', {
+        api.post('api/sos', {
           lat: currentLocation.lat,
           lng: currentLocation.lng,
           emergencyType: 'other',
