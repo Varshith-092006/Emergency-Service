@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-le
 import L from 'leaflet';
 import { MapPin, Phone, Navigation } from 'lucide-react';
 
-// Custom icons for different service types
 const createCustomIcon = (type, color = '#3b82f6', isSelected = false) => {
   return L.divIcon({
     className: 'custom-marker',
@@ -44,40 +43,37 @@ const serviceColors = {
 const MapComponent = ({ 
   services = [], 
   center = [28.6139, 77.209], 
-  zoom = 13, 
-  height = '400px',
+  zoom = 13,
+  isMobile = false,
   showUserLocation = false,
   userLocation = null,
   dangerZones = [],
   onServiceClick = null,
-  selectedService = null,
-  className = ''
+  selectedService = null
 }) => {
   const mapRef = useRef();
-  const markerRefs = useRef({});
 
-  // Center and open popup for selected service
   useEffect(() => {
-    if (selectedService && mapRef.current && markerRefs.current[selectedService._id]) {
-      const marker = markerRefs.current[selectedService._id];
-      if (marker) {
-        marker.openPopup();
-        mapRef.current.setView([
-          selectedService.location.coordinates[1],
-          selectedService.location.coordinates[0]
-        ], mapRef.current.getZoom(), { animate: true });
-      }
+    if (selectedService && mapRef.current) {
+      mapRef.current.setView([
+        selectedService.location.coordinates[1],
+        selectedService.location.coordinates[0]
+      ], mapRef.current.getZoom(), { animate: true });
     }
   }, [selectedService]);
 
   return (
-    <div className={`w-full rounded-lg overflow-hidden shadow-soft border border-gray-200 ${className}`} style={{ height }}>
+    <div className={`w-full rounded-lg overflow-hidden shadow-soft border border-gray-200 ${
+      isMobile ? 'h-[60vh]' : 'h-full'
+    }`}>
       <MapContainer
         center={center}
         zoom={zoom}
         scrollWheelZoom={true}
         style={{ height: '100%', width: '100%' }}
         whenCreated={mapInstance => (mapRef.current = mapInstance)}
+        zoomControl={!isMobile} // Hide zoom controls on mobile
+        touchZoom={isMobile} // Enable touch zoom only on mobile
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -118,14 +114,17 @@ const MapComponent = ({
           <Marker
             key={service._id}
             position={[service.location.coordinates[1], service.location.coordinates[0]]}
-            icon={createCustomIcon(service.type, serviceColors[service.type] || '#ef4444', selectedService && selectedService._id === service._id)}
+            icon={createCustomIcon(
+              service.type, 
+              serviceColors[service.type] || '#ef4444', 
+              selectedService?._id === service._id
+            )}
             eventHandlers={{
               click: () => onServiceClick && onServiceClick(service),
             }}
-            ref={ref => { markerRefs.current[service._id] = ref; }}
           >
-            <Popup>
-              <div className="space-y-2 min-w-[180px]">
+            <Popup className={isMobile ? 'w-64' : 'w-72'}>
+              <div className="space-y-2">
                 <div className="font-bold text-primary-700 flex items-center gap-1">
                   <MapPin className="w-4 h-4" /> {service.name}
                 </div>
@@ -140,22 +139,30 @@ const MapComponent = ({
                     📞 {service.contact.phone}
                   </div>
                 )}
-                <div className="flex gap-2 mt-3">
+                <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-2'} mt-3`}>
                   {service.contact?.phone && (
                     <a
                       href={`tel:${service.contact.phone}`}
-                      className="btn btn-success btn-sm flex items-center gap-1"
+                      className={`inline-flex items-center ${
+                        isMobile ? 'justify-center' : ''
+                      } px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700`}
+                      onClick={e => e.stopPropagation()}
                     >
-                      <Phone className="w-4 h-4" /> Call
+                      <Phone className="w-4 h-4 mr-1" />
+                      Call
                     </a>
                   )}
                   <a
                     href={`https://www.google.com/maps/dir/?api=1&destination=${service.location.coordinates[1]},${service.location.coordinates[0]}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn btn-primary btn-sm flex items-center gap-1"
+                    className={`inline-flex items-center ${
+                      isMobile ? 'justify-center' : ''
+                    } px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700`}
+                    onClick={e => e.stopPropagation()}
                   >
-                    <Navigation className="w-4 h-4" /> Directions
+                    <Navigation className="w-4 h-4 mr-1" />
+                    Directions
                   </a>
                 </div>
               </div>
@@ -192,4 +199,4 @@ const MapComponent = ({
   );
 };
 
-export default MapComponent; 
+export default MapComponent;
