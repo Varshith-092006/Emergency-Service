@@ -31,7 +31,7 @@ ChartJS.register(
 
 const AdminAnalytics = () => {
   const { data, isLoading, isError, error } = useQuery('admin-analytics', async () => {
-    const res = await api.get('/analytics/overview');
+    const res = await api.get('api/analytics/overview');
     return res.data.data;
   });
 

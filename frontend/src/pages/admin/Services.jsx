@@ -21,14 +21,14 @@ const AdminServices = () => {
   const { data: services, isLoading, isError } = useQuery(
     ['admin-services', search],
     async () => {
-      const res = await api.get('/services', { params: { search } });
+      const res = await api.get('api/services', { params: { search } });
       return res.data.data.services;
     }
   );
 
   // Bulk upload mutation
   const uploadMutation = useMutation(
-    (formData) => api.post('/admin/services/bulk-upload', formData),
+    (formData) => api.post('api/admin/services/bulk-upload', formData),
     {
       onSuccess: () => {
         toast.success('Services uploaded successfully!');

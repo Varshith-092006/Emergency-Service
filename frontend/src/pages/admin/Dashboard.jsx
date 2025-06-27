@@ -26,7 +26,7 @@ ChartJS.register(
 
 const AdminDashboard = () => {
   const { data, isLoading, isError, error } = useQuery('admin-dashboard', async () => {
-    const res = await api.get('/admin/dashboard');
+    const res = await api.get('api/admin/dashboard');
     return res.data.data;
   });
 
