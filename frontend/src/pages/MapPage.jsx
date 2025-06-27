@@ -36,7 +36,7 @@ const MapPage = () => {
     async () => {
       if (!currentLocation) return [];
       try {
-        const { data } = await api.get('/services/nearby', {
+        const { data } = await api.get('api/services/nearby', {
           params: { 
             lat: currentLocation.lat, 
             lng: currentLocation.lng, 
