@@ -57,15 +57,25 @@ const AdminServices = () => {
   );
 
   const handleUpload = async (e) => {
-    e.preventDefault();
-    if (!csvFile) {
-      toast.error('Please select a CSV file');
-      return;
-    }
-    const formData = new FormData();
-    formData.append('csv', csvFile);
-    uploadMutation.mutate(formData);
-  };
+  e.preventDefault();
+  if (!csvFile) {
+    toast.error('Please select a CSV file');
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('csv', csvFile);  // Make sure this matches the multer field name
+  
+  try {
+    await uploadMutation.mutateAsync(formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+  }
+};
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this service?')) {
