@@ -4,12 +4,20 @@ import { toast } from 'react-hot-toast';
 
 const LocationContext = createContext();
 
+// Cache for addresses
+const addressCache = new Map();
+const getCacheKey = (lat, lng) => `${lat.toFixed(4)},${lng.toFixed(4)}`;
+
 export const LocationProvider = ({ children }) => {
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [address, setAddress] = useState('');
   const [locationPermission, setLocationPermission] = useState('prompt');
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [locationError, setLocationError] = useState(null);
   const { user, updateLocation } = useAuth();
+
+  // Rate limiting for Nominatim requests
+  let lastRequestTime = 0;
 
   // Check location permission status
   useEffect(() => {
@@ -21,6 +29,52 @@ export const LocationProvider = ({ children }) => {
           setLocationPermission(result.state);
         };
       });
+    }
+  }, []);
+
+  // Get address from coordinates (reverse geocoding)
+  const getAddressFromCoords = useCallback(async (lat, lng) => {
+    const cacheKey = getCacheKey(lat, lng);
+    
+    // Return cached address if available
+    if (addressCache.has(cacheKey)) {
+      return addressCache.get(cacheKey);
+    }
+
+    // Rate limiting - max 1 request per second
+    const now = Date.now();
+    if (now - lastRequestTime < 1000) {
+      await new Promise(resolve => setTimeout(resolve, 1000 - (now - lastRequestTime)));
+    }
+    lastRequestTime = Date.now();
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+      );
+      
+      if (!response.ok) throw new Error('Nominatim request failed');
+      
+      const data = await response.json();
+      
+      // Format the address nicely
+      let formattedAddress = 'Nearby location';
+      if (data.address) {
+        const { road, suburb, city, state, country } = data.address;
+        formattedAddress = [road, suburb, city, state, country]
+          .filter(Boolean)
+          .join(', ');
+      } else if (data.display_name) {
+        formattedAddress = data.display_name;
+      }
+
+      // Cache the result
+      addressCache.set(cacheKey, formattedAddress);
+      return formattedAddress;
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+      // Fallback to coordinates if geocoding fails
+      return `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
     }
   }, []);
 
@@ -51,6 +105,10 @@ export const LocationProvider = ({ children }) => {
 
       setCurrentLocation(location);
 
+      // Get address from coordinates
+      const locationAddress = await getAddressFromCoords(latitude, longitude);
+      setAddress(locationAddress);
+
       // Update user location in backend if authenticated
       if (user) {
         try {
@@ -60,7 +118,7 @@ export const LocationProvider = ({ children }) => {
         }
       }
 
-      return location;
+      return { ...location, address: locationAddress };
     } catch (error) {
       let errorMessage = 'Failed to get location';
       
@@ -85,7 +143,7 @@ export const LocationProvider = ({ children }) => {
     } finally {
       setIsLoadingLocation(false);
     }
-  }, [user, updateLocation]);
+  }, [user, updateLocation, getAddressFromCoords]);
 
   // Request location permission
   const requestLocationPermission = useCallback(async () => {
@@ -107,7 +165,7 @@ export const LocationProvider = ({ children }) => {
     }
 
     const watchId = navigator.geolocation.watchPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude, accuracy } = position.coords;
         const location = {
           lat: latitude,
@@ -117,6 +175,10 @@ export const LocationProvider = ({ children }) => {
         };
 
         setCurrentLocation(location);
+        
+        // Get address for new location
+        const locationAddress = await getAddressFromCoords(latitude, longitude);
+        setAddress(locationAddress);
         
         if (callback) {
           callback(location);
@@ -139,26 +201,12 @@ export const LocationProvider = ({ children }) => {
     );
 
     return watchId;
-  }, [user, updateLocation]);
+  }, [user, updateLocation, getAddressFromCoords]);
 
   // Stop location watching
   const stopLocationWatch = useCallback((watchId) => {
     if (watchId && navigator.geolocation) {
       navigator.geolocation.clearWatch(watchId);
-    }
-  }, []);
-
-  // Get address from coordinates (reverse geocoding)
-  const getAddressFromCoords = useCallback(async (lat, lng) => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
-      );
-      const data = await response.json();
-      return data.display_name || 'Unknown location';
-    } catch (error) {
-      console.error('Reverse geocoding error:', error);
-      return 'Unknown location';
     }
   }, []);
 
@@ -177,6 +225,7 @@ export const LocationProvider = ({ children }) => {
 
   const value = {
     currentLocation,
+    address,
     locationPermission,
     isLoadingLocation,
     locationError,
@@ -203,4 +252,4 @@ export const useLocation = () => {
   return context;
 };
 
-export default LocationContext; 
+export default LocationContext;

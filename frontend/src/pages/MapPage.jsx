@@ -1,14 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { MapPin, Crosshair, AlertTriangle, Menu, Sliders } from 'lucide-react';
+import { MapPin, Crosshair, AlertTriangle, Menu, Sliders, RefreshCw } from 'lucide-react';
 import { useQuery } from 'react-query';
-import { useLocation } from '../contexts/LocationContext.jsx';
-import { useSocket } from '../contexts/SocketContext.jsx';
+import { useLocation } from '../contexts/LocationContext';
+import { useSocket } from '../contexts/SocketContext';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
 import Sidebar from '../components/map/Sidebar';
 import MapComponent from '../components/map/MapComponent';
 
-// Constants
 const SERVICE_TYPES = [
   { key: 'hospital', label: 'Hospitals', color: '#ef4444', icon: '🏥' },
   { key: 'police', label: 'Police', color: '#3b82f6', icon: '🚓' },
@@ -22,11 +21,9 @@ const DEFAULT_DANGER_ZONES = [
 const RADIUS_OPTIONS = [1, 3, 5, 10, 20];
 
 const MapPage = () => {
-  // Context hooks
-  const { currentLocation, getCurrentLocation, address } = useLocation();
+  const { currentLocation, address, getCurrentLocation, isLoadingLocation } = useLocation();
   const { sendSOSAlert } = useSocket();
 
-  // State management
   const [radius, setRadius] = useState(5);
   const [showDangerZones, setShowDangerZones] = useState(true);
   const [selectedType, setSelectedType] = useState('hospital');
@@ -34,7 +31,6 @@ const MapPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [controlsOpen, setControlsOpen] = useState(false);
 
-  // Data fetching
   const { data: services = [], isLoading, isError } = useQuery(
     ['services-nearby', currentLocation, radius],
     async () => {
@@ -55,17 +51,15 @@ const MapPage = () => {
     },
     { 
       enabled: !!currentLocation,
-      staleTime: 300000 // 5 minutes cache
+      staleTime: 300000
     }
   );
 
-  // Memoized filtered services
   const filteredServices = useMemo(
     () => services.filter(s => s.type === selectedType),
     [services, selectedType]
   );
 
-  // Event handlers
   const handleSOS = async () => {
     if (!currentLocation) {
       toast.error('Please enable location services to send SOS');
@@ -88,18 +82,17 @@ const MapPage = () => {
     }
   };
 
-  const handleGetLocation = async () => {
+  const handleRefreshLocation = async () => {
     try {
       await getCurrentLocation();
-      toast.success('Location updated');
+      toast.success('Location and address refreshed');
     } catch (error) {
-      toast.error('Unable to get current location');
+      toast.error('Unable to refresh location');
     }
   };
 
   return (
     <div className="flex h-[calc(100vh-64px)] bg-gray-50">
-      {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -112,9 +105,7 @@ const MapPage = () => {
         isError={isError}
       />
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col relative">
-        {/* Top Navigation Bar */}
         <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-white shadow-sm z-30">
           <div className="flex items-center gap-2 sm:gap-4">
             <button 
@@ -132,8 +123,19 @@ const MapPage = () => {
             <div className="hidden sm:flex items-center ml-4 text-sm text-gray-600">
               <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
               <span className="truncate max-w-xs">
-                {address || (currentLocation ? 'Locating...' : 'Location unavailable')}
+                {isLoadingLocation ? 'Locating...' : 
+                 address || 
+                 (currentLocation ? 'Address not available' : 'Location services disabled')}
               </span>
+              {currentLocation && (
+                <button 
+                  onClick={handleRefreshLocation}
+                  className="ml-2 p-1 rounded hover:bg-gray-100"
+                  title="Refresh location"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -147,21 +149,18 @@ const MapPage = () => {
           </button>
         </header>
 
-        {/* Floating Controls */}
         <div className="fixed bottom-6 right-6 z-[1000] flex flex-col items-end gap-3">
           {controlsOpen && (
             <div className="bg-white/90 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg flex flex-col gap-3">
-              {/* Location Button */}
               <button
-                onClick={handleGetLocation}
+                onClick={handleRefreshLocation}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-medium shadow disabled:opacity-50"
-                disabled={isLoading}
+                disabled={isLoadingLocation}
               >
                 <Crosshair className="w-4 h-4" />
-                My Location
+                Refresh Location
               </button>
 
-              {/* Danger Zones Toggle */}
               <button
                 onClick={() => setShowDangerZones(!showDangerZones)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium shadow ${
@@ -174,7 +173,6 @@ const MapPage = () => {
                 {showDangerZones ? 'Hide' : 'Show'} Danger Zones
               </button>
 
-              {/* Radius Selector */}
               <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 shadow text-sm">
                 <label htmlFor="radius-select" className="font-medium">
                   Radius:
@@ -195,7 +193,6 @@ const MapPage = () => {
             </div>
           )}
 
-          {/* Controls Toggle Button */}
           <button
             onClick={() => setControlsOpen(!controlsOpen)}
             className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -205,17 +202,15 @@ const MapPage = () => {
           </button>
         </div>
 
-        {/* Map Container */}
         <div className="flex-1 relative">
           <MapComponent
             services={filteredServices}
             center={
               currentLocation
                 ? [currentLocation.lat, currentLocation.lng]
-                : [28.6139, 77.209] // Default to Delhi coordinates
+                : [28.6139, 77.209]
             }
             zoom={14}
-            height="100%"
             showUserLocation={!!currentLocation}
             userLocation={currentLocation}
             dangerZones={showDangerZones ? DEFAULT_DANGER_ZONES : []}

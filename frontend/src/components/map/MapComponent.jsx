@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPin, Phone, Navigation } from 'lucide-react';
+import { MapPin, Phone, Navigation, RefreshCw } from 'lucide-react';
 
 const createCustomIcon = (type, color = '#3b82f6', isSelected = false) => {
   return L.divIcon({
@@ -52,6 +52,7 @@ const MapComponent = ({
   selectedService = null
 }) => {
   const mapRef = useRef();
+  const { getAddressFromCoords } = useLocation();
 
   useEffect(() => {
     if (selectedService && mapRef.current) {
@@ -72,8 +73,8 @@ const MapComponent = ({
         scrollWheelZoom={true}
         style={{ height: '100%', width: '100%' }}
         whenCreated={mapInstance => (mapRef.current = mapInstance)}
-        zoomControl={!isMobile} // Hide zoom controls on mobile
-        touchZoom={isMobile} // Enable touch zoom only on mobile
+        zoomControl={!isMobile}
+        touchZoom={isMobile}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -104,6 +105,22 @@ const MapComponent = ({
             <Popup>
               <div className="text-center">
                 <div className="font-semibold text-green-600 text-sm">📍 You are here</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Accuracy: ±{userLocation.accuracy.toFixed(0)} meters
+                </div>
+                <button
+                  onClick={async () => {
+                    const newAddress = await getAddressFromCoords(
+                      userLocation.lat,
+                      userLocation.lng
+                    );
+                    // Note: You'll need to handle this address update in your parent component
+                  }}
+                  className="mt-2 flex items-center justify-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Refresh address
+                </button>
               </div>
             </Popup>
           </Marker>
