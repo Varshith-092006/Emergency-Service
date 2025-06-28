@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'https://emergency-service-4fam.onrender.com',
+  baseURL: process.env.VITE_API_URL || 'https://emergency-service-4fam.onrender.com',
   timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
