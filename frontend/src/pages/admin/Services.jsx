@@ -72,7 +72,7 @@ const AdminServices = () => {
 
   // Bulk upload mutation
   const uploadMutation = useMutation(
-    (formData) => api.post('api/services/bulk-upload', formData, {
+    (formData) => api.post('api/admin/services/bulk-upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

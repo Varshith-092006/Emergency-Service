@@ -48,7 +48,7 @@ const ServicesPage = () => {
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
 
       if (currentLocation && (sortBy === 'distance' || viewMode === 'map')) {
-        const res = await api.get('api/admin/services/nearby', {
+        const res = await api.get('api/services/nearby', {
           params: {
             ...params,
             lat: currentLocation.lat,
