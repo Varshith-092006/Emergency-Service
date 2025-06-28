@@ -545,13 +545,14 @@ emergencyServiceSchema.statics.findNearby = async function(coordinates, options 
     .lean();
 
   if (isOpenNow) {
+    const now = new Date();
+    const currentDay = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
+    const currentTime = now.toTimeString().substring(0, 5);
+    
     services = services.filter(service => {
-      if (service.operatingHours.is24Hours) return true;
-      const now = new Date();
-      const day = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
-      const currentTime = now.toTimeString().substring(0, 5);
-      const hours = service.operatingHours[day];
-      return hours && hours.isOpen && currentTime >= hours.open && currentTime <= hours.close;
+      if (service.operatingHours?.is24Hours) return true;
+      const hours = service.operatingHours?.[currentDay];
+      return hours?.isOpen && currentTime >= hours.open && currentTime <= hours.close;
     });
   }
 
