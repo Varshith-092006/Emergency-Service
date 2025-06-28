@@ -491,8 +491,10 @@ const emergencyServiceSchema = new mongoose.Schema({
 });
 
 // Indexes
+emergencyServiceSchema.index({ 'location.coordinates': '2dsphere' });
 emergencyServiceSchema.index({ type: 1, category: 1, isActive: 1 });
-emergencyServiceSchema.index({ name: 'text', description: 'text', 'location.address.city': 'text' });
+emergencyServiceSchema.index({ name: 'text', description: 'text' });
+emergencyServiceSchema.index({ 'location.address.city': 1, 'location.address.state': 1 });
 
 // Virtuals
 emergencyServiceSchema.virtual('distance').get(function() {
@@ -500,29 +502,18 @@ emergencyServiceSchema.virtual('distance').get(function() {
 });
 
 emergencyServiceSchema.virtual('isOpenNow').get(function() {
-  if (this.operatingHours.is24Hours) return true;
+  if (this.operatingHours?.is24Hours) return true;
   
   const now = new Date();
   const day = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
   const currentTime = now.toTimeString().substring(0, 5);
   
-  const hours = this.operatingHours[day];
-  if (!hours || !hours.isOpen) return false;
-  
-  return currentTime >= hours.open && currentTime <= hours.close;
+  const hours = this.operatingHours?.[day];
+  return hours?.isOpen && currentTime >= hours.open && currentTime <= hours.close;
 });
 
-// Statics
+// Static Methods
 emergencyServiceSchema.statics.findNearby = async function(coordinates, options = {}) {
-  const {
-    maxDistance = 10,
-    type,
-    category,
-    isActive = true,
-    limit = 50,
-    isOpenNow = false
-  } = options;
-
   const query = {
     'location.coordinates': {
       $nearSphere: {
@@ -530,28 +521,30 @@ emergencyServiceSchema.statics.findNearby = async function(coordinates, options 
           type: 'Point',
           coordinates: coordinates
         },
-        $maxDistance: maxDistance * 1000
+        $maxDistance: options.maxDistance * 1000
       }
     },
-    isActive
+    isActive: true
   };
 
-  if (type) query.type = type;
-  if (category) query.category = category;
+  if (options.type) query.type = options.type;
+  if (options.category) query.category = options.category;
 
   let services = await this.find(query)
-    .limit(limit)
+    .select('name type category contact location operatingHours ratings isActive')
+    .limit(options.limit)
+    .maxTimeMS(30000)
     .populate('addedBy', 'name email')
     .lean();
 
-  if (isOpenNow) {
+  if (options.isOpenNow) {
     const now = new Date();
-    const currentDay = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
+    const day = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
     const currentTime = now.toTimeString().substring(0, 5);
     
     services = services.filter(service => {
       if (service.operatingHours?.is24Hours) return true;
-      const hours = service.operatingHours?.[currentDay];
+      const hours = service.operatingHours?.[day];
       return hours?.isOpen && currentTime >= hours.open && currentTime <= hours.close;
     });
   }

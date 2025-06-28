@@ -1,10 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { useLocation } from '../contexts/LocationContext';
 import api from '../services/api';
 import MapComponent from '../components/map/MapComponent';
-import { Loader2, Search, MapPin, Phone, List, Map, Clock, Navigation, AlertCircle } from 'lucide-react';
+import { 
+  Loader2, 
+  Search, 
+  MapPin, 
+  Phone, 
+  List, 
+  Map,
+  Clock,
+  Navigation,
+  AlertCircle,
+  Timer
+} from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 const SERVICE_TYPES = [
   { value: '', label: 'All Types' },
@@ -33,79 +45,191 @@ const ServicesPage = () => {
   const [sortBy, setSortBy] = useState('distance');
   const [radius, setRadius] = useState(10);
   const [showOpenNow, setShowOpenNow] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
-  const { data: services = [], isLoading, error } = useQuery(
-    ['services', searchTerm, selectedType, selectedCategory, currentLocation, radius, sortBy, showOpenNow],
-    async () => {
-      const params = {
-        search: searchTerm || undefined,
-        type: selectedType || undefined,
-        category: selectedCategory || undefined,
-        isOpenNow: showOpenNow ? 'true' : undefined
-      };
+  const { data: services = [], isLoading, error, refetch } = useQuery(
+    ['services', searchTerm, selectedType, selectedCategory, currentLocation, radius, sortBy, showOpenNow, lastRefresh],
+    async ({ signal }) => {
+      try {
+        const params = {
+          search: searchTerm || undefined,
+          type: selectedType || undefined,
+          category: selectedCategory || undefined,
+          isOpenNow: showOpenNow ? 'true' : undefined,
+          sort: sortBy === 'rating' ? '-ratings.average' : undefined
+        };
 
-      // Clean up params (remove undefined values)
-      Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+        const endpoint = currentLocation && (sortBy === 'distance' || viewMode === 'map') 
+          ? 'api/services/nearby' 
+          : 'api/services';
 
-      if (currentLocation && (sortBy === 'distance' || viewMode === 'map')) {
-        const res = await api.get('api/services/nearby', {
-          params: {
+        const response = await api.get(endpoint, {
+          params: endpoint === 'api/services/nearby' ? {
             ...params,
             lat: currentLocation.lat,
             lng: currentLocation.lng,
             maxDistance: radius
-          }
+          } : params,
+          signal // Pass the abort signal
         });
-        return res.data.data.services;
+
+        return response.data.data.services;
+      } catch (err) {
+        if (err.code === 'ERR_CANCELED') {
+          // Request was canceled (e.g., due to rapid filter changes)
+          return [];
+        }
+        throw err;
       }
-      
-      const res = await api.get('api/services', { params });
-      return res.data.data.services;
     },
     {
       retry: 2,
-      refetchOnWindowFocus: false,
+      retryDelay: 2000,
+      staleTime: 5 * 60 * 1000,
       onError: (err) => {
-        console.error('Error fetching services:', err);
+        if (err.code !== 'ERR_CANCELED') {
+          toast.error(err.response?.data?.message || 'Failed to load services');
+        }
       }
     }
   );
 
-  const filteredServices = React.useMemo(() => {
+  // Debounce rapid filter changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLastRefresh(Date.now());
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedType, selectedCategory, radius, showOpenNow]);
+
+  // Sort services
+  const sortedServices = React.useMemo(() => {
     if (!services) return [];
+    
     let results = [...services];
     
     if (currentLocation && sortBy === 'distance') {
-      results.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      results.sort((a, b) => {
+        const distA = calculateDistance(
+          currentLocation.lat,
+          currentLocation.lng,
+          a.location.coordinates[1],
+          a.location.coordinates[0]
+        );
+        const distB = calculateDistance(
+          currentLocation.lat,
+          currentLocation.lng,
+          b.location.coordinates[1],
+          b.location.coordinates[0]
+        );
+        return distA - distB;
+      });
     } else if (sortBy === 'rating') {
       results.sort((a, b) => (b.ratings?.average || 0) - (a.ratings?.average || 0));
+    } else if (sortBy === 'name') {
+      results.sort((a, b) => a.name.localeCompare(b.name));
     }
     
     return results;
   }, [services, sortBy, currentLocation]);
 
+  // Calculate distance between coordinates
+  const calculateDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="relative">
+          <Loader2 className="animate-spin w-12 h-12 text-primary-600" />
+          <Timer className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-white" />
+        </div>
+        <p className="mt-4 text-lg">Loading emergency services...</p>
+        <p className="text-sm text-gray-500 mt-2">
+          This may take a moment depending on your filters
+        </p>
+      </div>
+    );
+  }
+
+  // Error state
   if (error) {
     return (
-      <div className="alert alert-error">
-        <AlertCircle className="w-5 h-5" />
-        <span>Error loading services: {error.message}</span>
+      <div className="alert alert-error shadow-lg">
+        <AlertCircle className="w-6 h-6" />
+        <div>
+          <h3 className="font-bold">Failed to load services</h3>
+          <p className="text-sm">{error.message}</p>
+          <div className="mt-4 flex gap-2">
+            <button 
+              onClick={() => refetch()}
+              className="btn btn-sm btn-outline"
+            >
+              Retry
+            </button>
+            <button 
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedType('');
+                setSelectedCategory('');
+                setShowOpenNow(false);
+                refetch();
+              }}
+              className="btn btn-sm"
+            >
+              Reset Filters
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header and View Mode Toggle (same as before) */}
-      
+      {/* Header and View Mode Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Emergency Services</h1>
+          <p className="text-gray-600">
+            {currentLocation ? 'Services near your location' : 'Browse all emergency services'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600'}`}
+          >
+            <List className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setViewMode('map')}
+            className={`p-2 rounded-md ${viewMode === 'map' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600'}`}
+          >
+            <Map className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
       {/* Search and Filters */}
-      <div className="card">
+      <div className="card bg-base-100 shadow-sm">
         <div className="card-body space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search services..."
-              className="input input-bordered pl-10 w-full"
+              placeholder="Search by name, type, or location..."
+              className="input input-bordered w-full pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -114,7 +238,9 @@ const ServicesPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Type Filter */}
             <div>
-              <label className="form-label">Service Type</label>
+              <label className="label">
+                <span className="label-text">Service Type</span>
+              </label>
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
@@ -128,7 +254,9 @@ const ServicesPage = () => {
 
             {/* Category Filter */}
             <div>
-              <label className="form-label">Category</label>
+              <label className="label">
+                <span className="label-text">Category</span>
+              </label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
@@ -142,7 +270,9 @@ const ServicesPage = () => {
 
             {/* Sort By */}
             <div>
-              <label className="form-label">Sort By</label>
+              <label className="label">
+                <span className="label-text">Sort By</span>
+              </label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -157,7 +287,9 @@ const ServicesPage = () => {
             {/* Search Radius (only shown when location available) */}
             {currentLocation && (
               <div>
-                <label className="form-label">Search Radius (km)</label>
+                <label className="label">
+                  <span className="label-text">Search Radius (km)</span>
+                </label>
                 <select
                   value={radius}
                   onChange={(e) => setRadius(Number(e.target.value))}
@@ -178,65 +310,79 @@ const ServicesPage = () => {
               type="checkbox"
               checked={showOpenNow}
               onChange={() => setShowOpenNow(!showOpenNow)}
-              className="checkbox checkbox-primary"
+              className="toggle toggle-primary"
+              id="openNowToggle"
             />
-            <span>Show only open now</span>
+            <label htmlFor="openNowToggle" className="cursor-pointer">
+              Show only open now
+            </label>
           </div>
         </div>
       </div>
 
-      {/* Results */}
-      {isLoading ? (
-        <div className="flex justify-center items-center h-32">
-          <Loader2 className="animate-spin w-8 h-8 text-primary-600" />
-        </div>
-      ) : (
-        <>
-          <div className="text-sm text-gray-600">
-            Found {filteredServices.length} service{filteredServices.length !== 1 ? 's' : ''}
-            {currentLocation && ` within ${radius} km`}
+      {/* Results Summary */}
+      <div className="text-sm text-gray-600">
+        Found {sortedServices.length} service{sortedServices.length !== 1 ? 's' : ''}
+        {currentLocation && ` within ${radius} km`}
+        {showOpenNow && ', currently open'}
+      </div>
+
+      {/* Map View */}
+      {viewMode === 'map' && (
+        <div className="card bg-base-100 shadow-sm">
+          <div className="card-body p-0 h-[600px]">
+            <MapComponent
+              services={sortedServices}
+              center={currentLocation ? [currentLocation.lat, currentLocation.lng] : undefined}
+              zoom={currentLocation ? 12 : 8}
+              showUserLocation={!!currentLocation}
+              onServiceClick={(service) => window.location.href = `/services/${service._id}`}
+            />
           </div>
+        </div>
+      )}
 
-          {viewMode === 'map' ? (
-            <div className="card">
-              <div className="card-body p-0 h-[600px]">
-                <MapComponent
-                  services={filteredServices}
-                  center={currentLocation ? [currentLocation.lat, currentLocation.lng] : undefined}
-                  zoom={currentLocation ? 12 : 8}
-                  showUserLocation={!!currentLocation}
-                  onServiceClick={(service) => window.location.href = `/services/${service._id}`}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredServices.map(service => (
-                <ServiceCard 
-                  key={service._id} 
-                  service={service} 
-                  currentLocation={currentLocation} 
-                />
-              ))}
-            </div>
-          )}
+      {/* List View */}
+      {viewMode === 'list' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sortedServices.map(service => (
+            <ServiceCard 
+              key={service._id} 
+              service={service} 
+              currentLocation={currentLocation} 
+              calculateDistance={calculateDistance}
+            />
+          ))}
+        </div>
+      )}
 
-          {filteredServices.length === 0 && (
-            <div className="text-center py-12">
-              <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No services found</h3>
-              <p className="text-gray-600">
-                Try adjusting your search filters or expanding your search radius
-              </p>
-            </div>
-          )}
-        </>
+      {/* Empty State */}
+      {sortedServices.length === 0 && !isLoading && (
+        <div className="text-center py-12">
+          <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No services found</h3>
+          <p className="text-gray-600 mb-4">
+            Try adjusting your search filters or expanding your search radius
+          </p>
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedType('');
+              setSelectedCategory('');
+              setShowOpenNow(false);
+              setRadius(10);
+            }}
+            className="btn btn-primary"
+          >
+            Reset All Filters
+          </button>
+        </div>
       )}
     </div>
   );
 };
 
-const ServiceCard = ({ service, currentLocation }) => {
+const ServiceCard = ({ service, currentLocation, calculateDistance }) => {
   const distance = currentLocation ? 
     calculateDistance(
       currentLocation.lat,
@@ -246,22 +392,25 @@ const ServiceCard = ({ service, currentLocation }) => {
     ) : null;
 
   return (
-    <div className="card hover:shadow-md transition-shadow">
+    <div className="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
       <div className="card-body space-y-3">
         <div className="flex justify-between items-start">
           <div>
             <h3 className="font-semibold text-lg line-clamp-2">{service.name}</h3>
             <div className="flex flex-wrap gap-2 mt-1">
-              <span className="badge badge-primary">{service.type}</span>
-              <span className="badge badge-secondary">{service.category}</span>
+              <span className="badge badge-primary capitalize">{service.type}</span>
+              <span className="badge badge-secondary capitalize">{service.category}</span>
               {service.isOpenNow && (
                 <span className="badge badge-success">Open Now</span>
+              )}
+              {!service.isActive && (
+                <span className="badge badge-error">Inactive</span>
               )}
             </div>
           </div>
           {service.ratings?.average > 0 && (
             <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
-              <Star className="w-4 h-4 text-yellow-500" />
+              <span className="text-yellow-500">★</span>
               <span className="text-sm font-medium">
                 {service.ratings.average.toFixed(1)}
               </span>
@@ -329,17 +478,5 @@ const ServiceCard = ({ service, currentLocation }) => {
     </div>
   );
 };
-
-// Helper function for distance calculation
-function calculateDistance(lat1, lng1, lat2, lng2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLng/2) * Math.sin(dLng/2);
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-}
 
 export default ServicesPage;

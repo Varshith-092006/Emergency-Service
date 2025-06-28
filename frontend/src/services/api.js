@@ -1,50 +1,50 @@
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
-// Create axios instance
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const api = axios.create({
-  baseURL: API_URL,
-  timeout: 10000,
+  baseURL: process.env.REACT_APP_API_URL || 'https://emergency-service-4fam.onrender.com/api',
+  timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
-  },
+    'Cache-Control': 'no-cache'
+  }
 });
 
 // Request interceptor
-api.interceptors.request.use(
-  (config) => {
-    // Add auth token if available
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+api.interceptors.request.use(config => {
+  const newConfig = { ...config };
+  // Clean up undefined params
+  if (newConfig.params) {
+    newConfig.params = Object.fromEntries(
+      Object.entries(newConfig.params).filter(([_, v]) => v !== undefined && v !== '')
+    );
   }
-);
+  return newConfig;
+});
 
-// Response interceptor
+// Response interceptor with retry logic
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    // Handle common errors
-    if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
+  response => response,
+  async error => {
+    const originalRequest = error.config;
     
-    if (error.response?.status === 403) {
-      // Forbidden - redirect to home
-      window.location.href = '/';
+    // Retry only on timeout/aborted and not already retried
+    if (error.code === 'ECONNABORTED' && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      // Show toast notification
+      toast('Connection is slow. Retrying...', {
+        icon: '⏳',
+        duration: 2000
+      });
+      
+      // Wait 2 seconds before retrying
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return api(originalRequest);
     }
     
     return Promise.reject(error);
   }
 );
 
-export default api; 
+export default api;

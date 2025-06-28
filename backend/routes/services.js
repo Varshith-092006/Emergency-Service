@@ -5,138 +5,160 @@ const { optionalAuth } = require('../middleware/auth');
 const EmergencyService = require('../models/EmergencyService');
 const router = express.Router();
 
-// Helper to calculate distance
-const calculateDistance = (lat1, lng1, lat2, lng2) => {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLng/2) * Math.sin(dLng/2);
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+const DEFAULT_TIMEOUT = 30000; // 30 seconds
+const MAX_LIMIT = 100;
+
+// Helper function to clean query params
+const cleanParams = (params) => {
+  const cleaned = { ...params };
+  Object.keys(cleaned).forEach(key => {
+    if (cleaned[key] === undefined || cleaned[key] === '') {
+      delete cleaned[key];
+    }
+  });
+  return cleaned;
 };
 
 // GET /api/services
 router.get('/', optionalAuth, [
   query('type').optional().isIn(['hospital', 'police', 'ambulance', 'fire', 'pharmacy', 'veterinary', 'other']),
   query('category').optional().isIn(['emergency', 'urgent', 'routine']),
-  query('limit').optional().isInt({ min: 1, max: 100 }),
-  query('page').optional().isInt({ min: 1 }),
-  query('isOpenNow').optional().isBoolean()
+  query('limit').optional().isInt({ min: 1, max: MAX_LIMIT }).default(50),
+  query('page').optional().isInt({ min: 1 }).default(1),
+  query('isOpenNow').optional().isBoolean(),
+  query('search').optional().trim()
 ], asyncHandler(async (req, res) => {
+  req.setTimeout(DEFAULT_TIMEOUT);
+  
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     throw createValidationError(errors.array());
   }
 
-  const { 
-    type, 
-    category, 
-    city, 
-    state, 
-    search, 
-    limit = 50, 
-    page = 1, 
-    sort = '-ratings.average',
-    isOpenNow 
-  } = req.query;
-  
-  let query = { isActive: true };
-  
-  if (type) query.type = type;
-  if (category) query.category = category;
-  if (city) query['location.address.city'] = { $regex: city, $options: 'i' };
-  if (state) query['location.address.state'] = { $regex: state, $options: 'i' };
-
-  if (search) {
-    query.$or = [
-      { name: { $regex: search, $options: 'i' } },
-      { description: { $regex: search, $options: 'i' } },
-      { 'location.address.city': { $regex: search, $options: 'i' } },
-      { 'location.address.state': { $regex: search, $options: 'i' } },
-      { tags: { $in: [new RegExp(search, 'i')] } }
-    ];
-  }
-
-  let services = await EmergencyService.find(query)
-    .populate('addedBy', 'name email')
-    .sort(sort)
-    .limit(parseInt(limit))
-    .skip((parseInt(page) - 1) * parseInt(limit))
-    .lean();
-
-  // Filter by open now if requested
-  if (isOpenNow === 'true') {
-    const now = new Date();
-    const currentDay = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
-    const currentTime = now.toTimeString().substring(0, 5);
-    
-    services = services.filter(service => {
-      if (service.operatingHours?.is24Hours) return true;
-      const hours = service.operatingHours?.[currentDay];
-      return hours?.isOpen && currentTime >= hours.open && currentTime <= hours.close;
-    });
-  }
-
-  const total = await EmergencyService.countDocuments(query);
-
-  res.json({
-    success: true,
-    data: {
-      services,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
-      }
-    }
+  const params = cleanParams({
+    ...req.query,
+    limit: parseInt(req.query.limit),
+    page: parseInt(req.query.page)
   });
+
+  try {
+    const queryOptions = {
+      maxTimeMS: DEFAULT_TIMEOUT,
+      limit: params.limit,
+      skip: (params.page - 1) * params.limit
+    };
+
+    let dbQuery = { isActive: true };
+
+    // Apply filters
+    if (params.type) dbQuery.type = params.type;
+    if (params.category) dbQuery.category = params.category;
+    if (params.city) dbQuery['location.address.city'] = { $regex: params.city, $options: 'i' };
+    if (params.state) dbQuery['location.address.state'] = { $regex: params.state, $options: 'i' };
+
+    // Apply search
+    if (params.search) {
+      dbQuery.$or = [
+        { name: { $regex: params.search, $options: 'i' } },
+        { description: { $regex: params.search, $options: 'i' } },
+        { 'location.address.city': { $regex: params.search, $options: 'i' } },
+        { 'location.address.state': { $regex: params.search, $options: 'i' } },
+        { tags: { $in: [new RegExp(params.search, 'i')] } }
+      ];
+    }
+
+    const [services, total] = await Promise.all([
+      EmergencyService.find(dbQuery)
+        .select('name type category contact location operatingHours ratings isActive')
+        .populate('addedBy', 'name email')
+        .sort(params.sort || '-ratings.average')
+        .setOptions(queryOptions)
+        .lean(),
+      EmergencyService.countDocuments(dbQuery).maxTimeMS(DEFAULT_TIMEOUT)
+    ]);
+
+    // Filter by open now if requested
+    if (params.isOpenNow === 'true') {
+      const now = new Date();
+      const currentDay = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
+      const currentTime = now.toTimeString().substring(0, 5);
+      
+      services = services.filter(service => {
+        if (service.operatingHours?.is24Hours) return true;
+        const hours = service.operatingHours?.[currentDay];
+        return hours?.isOpen && currentTime >= hours.open && currentTime <= hours.close;
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        services,
+        pagination: {
+          page: params.page,
+          limit: params.limit,
+          total,
+          pages: Math.ceil(total / params.limit)
+        }
+      }
+    });
+  } catch (err) {
+    if (err.name === 'MongooseError' && err.message.includes('operation timed out')) {
+      throw createValidationError('query', 'Request timed out. Please try again with simpler filters.');
+    }
+    throw err;
+  }
 }));
 
 // GET /api/services/nearby
 router.get('/nearby', optionalAuth, [
   query('lat').isFloat({ min: -90, max: 90 }),
   query('lng').isFloat({ min: -180, max: 180 }),
-  query('maxDistance').optional().isFloat({ min: 0.1, max: 100 }),
-  query('limit').optional().isInt({ min: 1, max: 100 }),
+  query('maxDistance').optional().isFloat({ min: 0.1, max: 100 }).default(10),
+  query('limit').optional().isInt({ min: 1, max: MAX_LIMIT }).default(20),
   query('isOpenNow').optional().isBoolean()
 ], asyncHandler(async (req, res) => {
+  req.setTimeout(DEFAULT_TIMEOUT);
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     throw createValidationError(errors.array());
   }
 
-  const { lat, lng, type, category, maxDistance = 10, limit = 20, isOpenNow } = req.query;
-  const coordinates = [parseFloat(lng), parseFloat(lat)];
-
-  const services = await EmergencyService.findNearby(coordinates, {
-    maxDistance: parseFloat(maxDistance),
-    type,
-    category,
-    limit: parseInt(limit),
-    isOpenNow: isOpenNow === 'true'
+  const params = cleanParams({
+    ...req.query,
+    lat: parseFloat(req.query.lat),
+    lng: parseFloat(req.query.lng),
+    maxDistance: parseFloat(req.query.maxDistance),
+    limit: parseInt(req.query.limit)
   });
 
-  // Add distance to each service
-  services.forEach(service => {
-    service.distance = calculateDistance(
-      coordinates[1],
-      coordinates[0],
-      service.location.coordinates[1],
-      service.location.coordinates[0]
+  try {
+    const services = await EmergencyService.findNearby(
+      [params.lng, params.lat],
+      {
+        maxDistance: params.maxDistance,
+        type: params.type,
+        category: params.category,
+        limit: params.limit,
+        isOpenNow: params.isOpenNow
+      }
     );
-  });
 
-  res.json({
-    success: true,
-    data: {
-      services,
-      searchLocation: { lat: parseFloat(lat), lng: parseFloat(lng) },
-      maxDistance: parseFloat(maxDistance)
+    res.json({
+      success: true,
+      data: {
+        services,
+        searchLocation: { lat: params.lat, lng: params.lng },
+        maxDistance: params.maxDistance
+      }
+    });
+  } catch (err) {
+    if (err.name === 'MongooseError' && err.message.includes('operation timed out')) {
+      throw createValidationError('query', 'Nearby search timed out. Please try a smaller radius.');
     }
-  });
+    throw err;
+  }
 }));
 
 module.exports = router;
