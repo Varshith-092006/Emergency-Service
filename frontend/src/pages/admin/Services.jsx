@@ -60,7 +60,7 @@ const AdminServices = () => {
   const { data: services, isLoading, isError } = useQuery(
     ['admin-services', search],
     async () => {
-      const res = await api.get('api/services', { 
+      const res = await api.get('/api/services', { 
         params: { 
           search,
           limit: 100 
@@ -72,7 +72,7 @@ const AdminServices = () => {
 
   // Bulk upload mutation
   const uploadMutation = useMutation(
-    (formData) => api.post('api/admin/services/bulk-upload', formData, {
+    (formData) => api.post('/api/admin/services/bulk-upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -92,7 +92,7 @@ const AdminServices = () => {
 
   // Delete service mutation
   const deleteMutation = useMutation(
-    (id) => api.delete(`api/services/${id}`),
+    (id) => api.delete(`/api/services/${id}`),
     {
       onSuccess: () => {
         toast.success('Service deleted successfully');
@@ -106,7 +106,7 @@ const AdminServices = () => {
 
   // Update service mutation
   const updateMutation = useMutation(
-    (updatedService) => api.put(`api/services/${editingService}`, updatedService),
+    (updatedService) => api.put(`/api/services/${editingService}`, updatedService),
     {
       onSuccess: () => {
         toast.success('Service updated successfully');

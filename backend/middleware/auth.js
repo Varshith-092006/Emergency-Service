@@ -15,7 +15,7 @@ const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Get user from token
-      const user = await User.findById(decoded.id).select('-password');
+      const user = await User.findById(decoded.id);
       
       if (!user) {
         return res.status(401).json({
@@ -39,7 +39,10 @@ const protect = async (req, res, next) => {
         });
       }
 
-      req.user = user;
+      // Remove password from user object before sending to client
+      const userWithoutPassword = user.toObject();
+      delete userWithoutPassword.password;
+      req.user = userWithoutPassword;
       next();
     } catch (error) {
       console.error('Token verification error:', error);
@@ -146,10 +149,13 @@ const optionalAuth = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.id).select('-password');
+      const user = await User.findById(decoded.id);
       
       if (user && user.isActive && !user.isLocked()) {
-        req.user = user;
+        // Remove password from user object before sending to client
+        const userWithoutPassword = user.toObject();
+        delete userWithoutPassword.password;
+        req.user = userWithoutPassword;
       }
     } catch (error) {
       // Token is invalid, but we don't fail the request

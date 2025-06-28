@@ -60,11 +60,11 @@ const ServicesPage = () => {
         };
 
         const endpoint = currentLocation && (sortBy === 'distance' || viewMode === 'map') 
-          ? 'api/services/nearby' 
-          : 'api/services';
+          ? '/api/services/nearby' 
+          : '/api/services';
 
         const response = await api.get(endpoint, {
-          params: endpoint === 'api/services/nearby' ? {
+          params: endpoint === '/api/services/nearby' ? {
             ...params,
             lat: currentLocation.lat,
             lng: currentLocation.lng,

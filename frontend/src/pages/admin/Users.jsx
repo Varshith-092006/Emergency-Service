@@ -6,7 +6,7 @@ import { Loader2, User, Shield, Check, X } from 'lucide-react';
 const AdminUsers = () => {
   const [search, setSearch] = useState('');
   const { data, isLoading, refetch } = useQuery(['admin-users', search], async () => {
-    const res = await api.get('api/users', { params: { search } });
+    const res = await api.get('/api/users', { params: { search } });
     return res.data.data.users;
   });
 

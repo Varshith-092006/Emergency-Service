@@ -135,14 +135,10 @@ router.get('/nearby', optionalAuth, [
 
   try {
     const services = await EmergencyService.findNearby(
-      [params.lng, params.lat],
-      {
-        maxDistance: params.maxDistance,
-        type: params.type,
-        category: params.category,
-        limit: params.limit,
-        isOpenNow: params.isOpenNow
-      }
+      params.lat,
+      params.lng,
+      params.maxDistance,
+      params.type
     );
 
     res.json({

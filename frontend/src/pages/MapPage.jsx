@@ -36,7 +36,7 @@ const MapPage = () => {
     async () => {
       if (!currentLocation) return [];
       try {
-        const { data } = await api.get('api/services/nearby', {
+        const { data } = await api.get('/api/services/nearby', {
           params: { 
             lat: currentLocation.lat, 
             lng: currentLocation.lng, 
@@ -68,7 +68,7 @@ const MapPage = () => {
     try {
       await Promise.all([
         sendSOSAlert(currentLocation, 'other'),
-        api.post('api/sos', {
+        api.post('/api/sos', {
           lat: currentLocation.lat,
           lng: currentLocation.lng,
           emergencyType: 'other',

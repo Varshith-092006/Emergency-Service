@@ -117,10 +117,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Serve static files from React build directory
 app.use(express.static(path.join(__dirname, '../frontend/build')));
 
-// Handle client-side routing - return all requests to React app
-app.get((req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-});
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -139,6 +135,11 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', protect, requireAdmin, adminRoutes);
 app.use('/api/sos', sosRoutes);
 app.use('/api/analytics', analyticsRoutes);
+
+// Handle client-side routing - return all requests to React app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+});
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

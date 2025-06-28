@@ -1,0 +1,54 @@
+{
+  "name": "emergency-service-locator",
+  "version": "1.0.0",
+  "description": "A comprehensive web application for locating and managing emergency services",
+  "main": "index.js",
+  "scripts": {
+    "setup": "node setup.js",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:frontend": "cd frontend && npm run lint",
+    "clean": "npm run clean:backend && npm run clean:frontend",
+    "clean:backend": "cd backend && rm -rf node_modules package-lock.json",
+    "clean:frontend": "cd frontend && rm -rf node_modules package-lock.json dist",
+    "reset": "npm run clean && npm run install:all"
+  },
+  "keywords": [
+    "emergency",
+    "services",
+    "location",
+    "healthcare",
+    "react",
+    "nodejs",
+    "mongodb",
+    "maps"
+  ],
+  "author": "Emergency Service Locator Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/emergency-service-locator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/emergency-service-locator/issues"
+  },
+  "homepage": "https://github.com/your-username/emergency-service-locator#readme"
+} 
