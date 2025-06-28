@@ -31,6 +31,7 @@ const allowedOrigins = [
   "http://localhost:3001",
   "http://localhost:5173",
   "https://emergency-service-lilac.vercel.app",
+  "https://emergency-service-pink.vercel.app",
   process.env.CORS_ORIGIN
 ].filter(Boolean);
 
@@ -39,7 +40,8 @@ const io = socketIo(server, {
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "cache-control"]
   }
 });
 
@@ -76,7 +78,7 @@ const authLimiter = rateLimit({
 app.use('/api/', limiter);
 app.use('/api/auth', authLimiter);
 
-// Enhanced CORS middleware
+// Enhanced CORS middleware with proper headers
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -88,8 +90,21 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Length', 'X-Powered-By']
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'cache-control',
+    'x-access-token',
+    'origin',
+    'accept'
+  ],
+  exposedHeaders: [
+    'Content-Length',
+    'X-Powered-By',
+    'Content-Type',
+    'Authorization'
+  ]
 }));
 
 // Handle preflight requests
@@ -117,6 +132,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Serve static files from React build directory
 app.use(express.static(path.join(__dirname, '../frontend/build')));
 
+// Handle client-side routing - return all requests to React app
+app.get((req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+});
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
