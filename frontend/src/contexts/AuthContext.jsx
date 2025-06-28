@@ -119,7 +119,7 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-          const response = await api.get('api/auth/me');
+          const response = await api.get('/api/auth/me');
           dispatch({
             type: AUTH_ACTIONS.LOGIN_SUCCESS,
             payload: {
@@ -145,7 +145,7 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.LOGIN_START });
       
-      const response = await api.post('api/auth/login', credentials);
+      const response = await api.post('/api/auth/login', credentials);
       const { user, token } = response.data.data;
       
       dispatch({
@@ -171,7 +171,7 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: AUTH_ACTIONS.REGISTER_START });
       
-      const response = await api.post('api/auth/register', userData);
+      const response = await api.post('/api/auth/register', userData);
       const { user, token } = response.data.data;
       
       dispatch({
@@ -202,7 +202,7 @@ export const AuthProvider = ({ children }) => {
   // Update user profile
   const updateProfile = async (profileData) => {
     try {
-      const response = await api.put('api/auth/me', profileData);
+      const response = await api.put('/api/auth/me', profileData);
       const updatedUser = response.data.data.user;
       
       dispatch({
@@ -222,7 +222,7 @@ export const AuthProvider = ({ children }) => {
   // Change password
   const changePassword = async (passwordData) => {
     try {
-      await api.put('api/auth/change-password', passwordData);
+      await api.put('/api/auth/change-password', passwordData);
       toast.success('Password changed successfully!');
       return { success: true };
     } catch (error) {
@@ -235,7 +235,7 @@ export const AuthProvider = ({ children }) => {
   // Add emergency contact
   const addEmergencyContact = async (contactData) => {
     try {
-      const response = await api.post('api/auth/emergency-contacts', contactData);
+      const response = await api.post('/api/auth/emergency-contacts', contactData);
       const updatedUser = response.data.data.user;
       
       dispatch({
@@ -255,7 +255,7 @@ export const AuthProvider = ({ children }) => {
   // Remove emergency contact
   const removeEmergencyContact = async (contactId) => {
     try {
-      const response = await api.delete(`api/auth/emergency-contacts/${contactId}`);
+      const response = await api.delete(`/api/auth/emergency-contacts/${contactId}`);
       const updatedUser = response.data.data.user;
       
       dispatch({
@@ -275,7 +275,7 @@ export const AuthProvider = ({ children }) => {
   // Update location
   const updateLocation = async (locationData) => {
     try {
-      const response = await api.post('api/auth/update-location', locationData);
+      const response = await api.post('/api/auth/update-location', locationData);
       const updatedUser = response.data.data.user;
       
       dispatch({
