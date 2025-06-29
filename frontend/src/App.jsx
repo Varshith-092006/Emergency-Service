@@ -34,6 +34,7 @@ import 'leaflet/dist/leaflet.css';
 import HelpPage from './pages/HelpPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import SosAlertsPage from './pages/SosAlertsPage.jsx';
+import SettingsPage from './pages/SettingsPage.jsx';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -100,6 +101,12 @@ function AppRoutes() {
           <SosAlertsPage />
         </AdminRoute>
       } />
+
+      <Route path='/admin/settings' element={
+        <AdminRoute>
+          <SettingsPage/>
+        </AdminRoute>
+      }/>
       
       <Route path="/admin/analytics" element={
         <AdminRoute>

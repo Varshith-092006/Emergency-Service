@@ -70,13 +70,12 @@ const ServicesPage = () => {
             lng: currentLocation.lng,
             maxDistance: radius
           } : params,
-          signal // Pass the abort signal
+          signal
         });
 
         return response.data.data.services;
       } catch (err) {
         if (err.code === 'ERR_CANCELED') {
-          // Request was canceled (e.g., due to rapid filter changes)
           return [];
         }
         throw err;
@@ -94,7 +93,6 @@ const ServicesPage = () => {
     }
   );
 
-  // Debounce rapid filter changes
   useEffect(() => {
     const timer = setTimeout(() => {
       setLastRefresh(Date.now());
@@ -103,7 +101,6 @@ const ServicesPage = () => {
     return () => clearTimeout(timer);
   }, [searchTerm, selectedType, selectedCategory, radius, showOpenNow]);
 
-  // Sort services
   const sortedServices = React.useMemo(() => {
     if (!services) return [];
     
@@ -134,7 +131,6 @@ const ServicesPage = () => {
     return results;
   }, [services, sortBy, currentLocation]);
 
-  // Calculate distance between coordinates
   const calculateDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -146,7 +142,6 @@ const ServicesPage = () => {
     return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
@@ -155,14 +150,10 @@ const ServicesPage = () => {
           <Timer className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-white" />
         </div>
         <p className="mt-4 text-lg">Loading emergency services...</p>
-        <p className="text-sm text-gray-500 mt-2">
-          This may take a moment depending on your filters
-        </p>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="alert alert-error shadow-lg">
@@ -196,141 +187,136 @@ const ServicesPage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header and View Mode Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Emergency Services</h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col space-y-6">
+        {/* Header */}
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-3xl font-bold text-gray-900">Emergency Services</h1>
           <p className="text-gray-600">
             {currentLocation ? 'Services near your location' : 'Browse all emergency services'}
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600'}`}
-          >
-            <List className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setViewMode('map')}
-            className={`p-2 rounded-md ${viewMode === 'map' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600'}`}
-          >
-            <Map className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
 
-      {/* Search and Filters */}
-      <div className="card bg-base-100 shadow-sm">
-        <div className="card-body space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search by name, type, or location..."
-              className="input input-bordered w-full pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Type Filter */}
-            <div>
-              <label className="label">
-                <span className="label-text">Service Type</span>
-              </label>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="select select-bordered w-full"
-              >
-                {SERVICE_TYPES.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Category Filter */}
-            <div>
-              <label className="label">
-                <span className="label-text">Category</span>
-              </label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="select select-bordered w-full"
-              >
-                {SERVICE_CATEGORIES.map(cat => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sort By */}
-            <div>
-              <label className="label">
-                <span className="label-text">Sort By</span>
-              </label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="select select-bordered w-full"
-              >
-                {currentLocation && <option value="distance">Distance</option>}
-                <option value="rating">Rating</option>
-                <option value="name">Name</option>
-              </select>
-            </div>
-
-            {/* Search Radius (only shown when location available) */}
-            {currentLocation && (
-              <div>
-                <label className="label">
-                  <span className="label-text">Search Radius (km)</span>
-                </label>
-                <select
-                  value={radius}
-                  onChange={(e) => setRadius(Number(e.target.value))}
-                  className="select select-bordered w-full"
-                >
-                  <option value={5}>5 km</option>
-                  <option value={10}>10 km</option>
-                  <option value={20}>20 km</option>
-                  <option value={50}>50 km</option>
-                </select>
+        {/* View Toggle */}
+        <div className="flex justify-end">
+          <div className="inline-flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-4 py-2 rounded-md ${viewMode === 'list' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600'}`}
+            >
+              <div className="flex items-center gap-2">
+                <List className="w-5 h-5" />
+                <span>List</span>
               </div>
-            )}
-          </div>
-
-          {/* Open Now Toggle */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={showOpenNow}
-              onChange={() => setShowOpenNow(!showOpenNow)}
-              className="toggle toggle-primary"
-              id="openNowToggle"
-            />
-            <label htmlFor="openNowToggle" className="cursor-pointer">
-              Show only open now
-            </label>
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={`px-4 py-2 rounded-md ${viewMode === 'map' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600'}`}
+            >
+              <div className="flex items-center gap-2">
+                <Map className="w-5 h-5" />
+                <span>Map</span>
+              </div>
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Results Summary */}
-      <div className="text-sm text-gray-600">
-        Found {sortedServices.length} service{sortedServices.length !== 1 ? 's' : ''}
-        {currentLocation && ` within ${radius} km`}
-        {showOpenNow && ', currently open'}
-      </div>
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search services..."
+            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
 
-      {/* Map View */}
-      {viewMode === 'map' && (
-        <div className="card bg-base-100 shadow-sm">
-          <div className="card-body p-0 h-[600px]">
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+            >
+              {SERVICE_TYPES.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+            >
+              {SERVICE_CATEGORIES.map(cat => (
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+            >
+              {currentLocation && <option value="distance">Distance</option>}
+              <option value="rating">Rating</option>
+              <option value="name">Name</option>
+            </select>
+          </div>
+
+          {currentLocation && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Search Radius (km)</label>
+              <select
+                value={radius}
+                onChange={(e) => setRadius(Number(e.target.value))}
+                className="w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500"
+              >
+                <option value={5}>5 km</option>
+                <option value={10}>10 km</option>
+                <option value={20}>20 km</option>
+                <option value={50}>50 km</option>
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Open Now Toggle */}
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            checked={showOpenNow}
+            onChange={() => setShowOpenNow(!showOpenNow)}
+            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            id="openNowToggle"
+          />
+          <label htmlFor="openNowToggle" className="ml-2 block text-sm text-gray-700">
+            Show only open now
+          </label>
+        </div>
+
+        {/* Results Count */}
+        <div className="text-sm text-gray-500">
+          Found {sortedServices.length} service{sortedServices.length !== 1 ? 's' : ''}
+          {currentLocation && ` within ${radius} km`}
+          {showOpenNow && ', currently open'}
+        </div>
+
+        {/* Map View */}
+        {viewMode === 'map' && (
+          <div className="rounded-lg overflow-hidden shadow-md h-[600px]">
             <MapComponent
               services={sortedServices}
               center={currentLocation ? [currentLocation.lat, currentLocation.lng] : undefined}
@@ -339,45 +325,45 @@ const ServicesPage = () => {
               onServiceClick={(service) => window.location.href = `/services/${service._id}`}
             />
           </div>
-        </div>
-      )}
+        )}
 
-      {/* List View */}
-      {viewMode === 'list' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedServices.map(service => (
-            <ServiceCard 
-              key={service._id} 
-              service={service} 
-              currentLocation={currentLocation} 
-              calculateDistance={calculateDistance}
-            />
-          ))}
-        </div>
-      )}
+        {/* List View */}
+        {viewMode === 'list' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedServices.map(service => (
+              <ServiceCard 
+                key={service._id} 
+                service={service} 
+                currentLocation={currentLocation} 
+                calculateDistance={calculateDistance}
+              />
+            ))}
+          </div>
+        )}
 
-      {/* Empty State */}
-      {sortedServices.length === 0 && !isLoading && (
-        <div className="text-center py-12">
-          <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No services found</h3>
-          <p className="text-gray-600 mb-4">
-            Try adjusting your search filters or expanding your search radius
-          </p>
-          <button
-            onClick={() => {
-              setSearchTerm('');
-              setSelectedType('');
-              setSelectedCategory('');
-              setShowOpenNow(false);
-              setRadius(10);
-            }}
-            className="btn btn-primary"
-          >
-            Reset All Filters
-          </button>
-        </div>
-      )}
+        {/* Empty State */}
+        {sortedServices.length === 0 && !isLoading && (
+          <div className="text-center py-12">
+            <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No services found</h3>
+            <p className="text-gray-600 mb-6">
+              Try adjusting your search filters or expanding your search radius
+            </p>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedType('');
+                setSelectedCategory('');
+                setShowOpenNow(false);
+                setRadius(10);
+              }}
+              className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            >
+              Reset All Filters
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -392,19 +378,22 @@ const ServiceCard = ({ service, currentLocation, calculateDistance }) => {
     ) : null;
 
   return (
-    <div className="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
-      <div className="card-body space-y-3">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+      <div className="p-6">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="font-semibold text-lg line-clamp-2">{service.name}</h3>
-            <div className="flex flex-wrap gap-2 mt-1">
-              <span className="badge badge-primary capitalize">{service.type}</span>
-              <span className="badge badge-secondary capitalize">{service.category}</span>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">{service.name}</h3>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                {service.type}
+              </span>
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-secondary-100 text-secondary-800">
+                {service.category}
+              </span>
               {service.isOpenNow && (
-                <span className="badge badge-success">Open Now</span>
-              )}
-              {!service.isActive && (
-                <span className="badge badge-error">Inactive</span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Open Now
+                </span>
               )}
             </div>
           </div>
@@ -418,57 +407,47 @@ const ServiceCard = ({ service, currentLocation, calculateDistance }) => {
           )}
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-start gap-2">
-            <MapPin className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-gray-600 line-clamp-2">
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            <MapPin className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-gray-600">
               {service.location.address.fullAddress}
-            </div>
+            </p>
           </div>
 
           {distance !== null && (
-            <div className="flex items-center gap-2">
-              <Navigation className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-600">
+            <div className="flex items-center gap-3">
+              <Navigation className="w-5 h-5 text-gray-500" />
+              <p className="text-sm text-gray-600">
                 {distance.toFixed(1)} km away
-              </span>
+              </p>
             </div>
           )}
 
           {service.contact?.phone && (
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-gray-500" />
+            <div className="flex items-center gap-3">
+              <Phone className="w-5 h-5 text-gray-500" />
               <a 
                 href={`tel:${service.contact.phone}`} 
-                className="text-sm text-gray-600 hover:underline"
+                className="text-sm text-gray-600 hover:text-primary-600 hover:underline"
               >
                 {service.contact.phone}
               </a>
             </div>
           )}
-
-          {service.operatingHours && !service.operatingHours.is24Hours && (
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-600">
-                {service.operatingHours[new Date().toLocaleString('en-US', { weekday: 'long' }).toLowerCase()]?.open} -{' '}
-                {service.operatingHours[new Date().toLocaleString('en-US', { weekday: 'long' }).toLowerCase()]?.close}
-              </span>
-            </div>
-          )}
         </div>
 
-        <div className="flex gap-2 pt-2">
+        <div className="mt-6 flex gap-3">
           <Link
             to={`/services/${service._id}`}
-            className="btn btn-primary btn-sm flex-1"
+            className="flex-1 px-4 py-2 bg-primary-600 text-white text-center rounded-md hover:bg-primary-700 transition-colors"
           >
             View Details
           </Link>
           {service.contact?.phone && (
             <a
               href={`tel:${service.contact.phone}`}
-              className="btn btn-success btn-sm"
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
             >
               Call Now
             </a>
