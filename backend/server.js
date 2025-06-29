@@ -130,12 +130,12 @@ if (process.env.NODE_ENV === 'development') {
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Serve static files from React build directory
-app.use(express.static(path.join(__dirname, '../frontend/build')));
+// app.use(express.static(path.join(__dirname, '../frontend/build')));
 
-// Handle client-side routing - return all requests to React app
-app.get((req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-});
+// // Handle client-side routing - return all requests to React app
+// app.get((req, res) => {
+//   res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+// });
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
