@@ -927,13 +927,17 @@ const AdminServices = () => {
     const lat = Number(form.location.coordinates[1]);
     if(Number.isNaN(lon) || Number.isNaN(lat)) return toast.error('Invalid coordinates');
 
-    await updateMutation.mutateAsync({
-      ...form,
-      location:{
-        ...form.location,
-        coordinates:[lon,lat]
-      }
-    });
+    // Prepare the payload with required location.type
+  const payload = {
+    ...form,
+    location: {
+      type: 'Point', // Add this required field
+      coordinates: [lon, lat],
+      address: form.location.address
+    }
+  };
+
+  await updateMutation.mutateAsync(payload);
   };
 
   const toggleDay = day=>{
