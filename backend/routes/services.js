@@ -1,7 +1,7 @@
 const express = require('express');
 const { query, validationResult } = require('express-validator');
 const { asyncHandler, createValidationError } = require('../middleware/errorHandler');
-const { optionalAuth } = require('../middleware/auth');
+const { optionalAuth, protect, requireAdmin } = require('../middleware/auth');
 const EmergencyService = require('../models/EmergencyService');
 const router = express.Router();
 
@@ -29,7 +29,7 @@ router.get('/', optionalAuth, [
   query('search').optional().trim()
 ], asyncHandler(async (req, res) => {
   req.setTimeout(DEFAULT_TIMEOUT);
-  
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     throw createValidationError(errors.array());
@@ -41,73 +41,64 @@ router.get('/', optionalAuth, [
     page: parseInt(req.query.page)
   });
 
-  try {
-    const queryOptions = {
-      maxTimeMS: DEFAULT_TIMEOUT,
-      limit: params.limit,
-      skip: (params.page - 1) * params.limit
-    };
+  let dbQuery = { isActive: true };
+  const queryOptions = {
+    maxTimeMS: DEFAULT_TIMEOUT,
+    limit: params.limit,
+    skip: (params.page - 1) * params.limit
+  };
 
-    let dbQuery = { isActive: true };
+  // Apply filters
+  if (params.type) dbQuery.type = params.type;
+  if (params.category) dbQuery.category = params.category;
+  if (params.city) dbQuery['location.address.city'] = { $regex: params.city, $options: 'i' };
+  if (params.state) dbQuery['location.address.state'] = { $regex: params.state, $options: 'i' };
 
-    // Apply filters
-    if (params.type) dbQuery.type = params.type;
-    if (params.category) dbQuery.category = params.category;
-    if (params.city) dbQuery['location.address.city'] = { $regex: params.city, $options: 'i' };
-    if (params.state) dbQuery['location.address.state'] = { $regex: params.state, $options: 'i' };
-
-    // Apply search
-    if (params.search) {
-      dbQuery.$or = [
-        { name: { $regex: params.search, $options: 'i' } },
-        { description: { $regex: params.search, $options: 'i' } },
-        { 'location.address.city': { $regex: params.search, $options: 'i' } },
-        { 'location.address.state': { $regex: params.search, $options: 'i' } },
-        { tags: { $in: [new RegExp(params.search, 'i')] } }
-      ];
-    }
-
-    const [services, total] = await Promise.all([
-      EmergencyService.find(dbQuery)
-        .select('name type category contact location operatingHours ratings isActive')
-        .populate('addedBy', 'name email')
-        .sort(params.sort || '-ratings.average')
-        .setOptions(queryOptions)
-        .lean(),
-      EmergencyService.countDocuments(dbQuery).maxTimeMS(DEFAULT_TIMEOUT)
-    ]);
-
-    // Filter by open now if requested
-    if (params.isOpenNow === 'true') {
-      const now = new Date();
-      const currentDay = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
-      const currentTime = now.toTimeString().substring(0, 5);
-      
-      services = services.filter(service => {
-        if (service.operatingHours?.is24Hours) return true;
-        const hours = service.operatingHours?.[currentDay];
-        return hours?.isOpen && currentTime >= hours.open && currentTime <= hours.close;
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        services,
-        pagination: {
-          page: params.page,
-          limit: params.limit,
-          total,
-          pages: Math.ceil(total / params.limit)
-        }
-      }
-    });
-  } catch (err) {
-    if (err.name === 'MongooseError' && err.message.includes('operation timed out')) {
-      throw createValidationError('query', 'Request timed out. Please try again with simpler filters.');
-    }
-    throw err;
+  // Apply search
+  if (params.search) {
+    dbQuery.$or = [
+      { name: { $regex: params.search, $options: 'i' } },
+      { description: { $regex: params.search, $options: 'i' } },
+      { 'location.address.city': { $regex: params.search, $options: 'i' } },
+      { 'location.address.state': { $regex: params.search, $options: 'i' } },
+      { tags: { $in: [new RegExp(params.search, 'i')] } }
+    ];
   }
+
+  let services = await EmergencyService.find(dbQuery)
+    .select('name type category contact location operatingHours ratings isActive')
+    .populate('addedBy', 'name email')
+    .sort(params.sort || '-ratings.average')
+    .setOptions(queryOptions)
+    .lean();
+
+  const total = await EmergencyService.countDocuments(dbQuery).maxTimeMS(DEFAULT_TIMEOUT);
+
+  // Filter by open now if requested
+  if (params.isOpenNow === 'true') {
+    const now = new Date();
+    const currentDay = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
+    const currentTime = now.toTimeString().substring(0, 5);
+
+    services = services.filter(service => {
+      if (service.operatingHours?.is24Hours) return true;
+      const hours = service.operatingHours?.[currentDay];
+      return hours?.isOpen && currentTime >= hours.open && currentTime <= hours.close;
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      services,
+      pagination: {
+        page: params.page,
+        limit: params.limit,
+        total,
+        pages: Math.ceil(total / params.limit)
+      }
+    }
+  });
 }));
 
 // GET /api/services/nearby
@@ -133,28 +124,61 @@ router.get('/nearby', optionalAuth, [
     limit: parseInt(req.query.limit)
   });
 
-  try {
-    const services = await EmergencyService.findNearby(
-      params.lat,
-      params.lng,
-      params.maxDistance,
-      params.type
-    );
+  const services = await EmergencyService.findNearby(
+    params.lat,
+    params.lng,
+    params.maxDistance,
+    params.type
+  );
 
-    res.json({
-      success: true,
-      data: {
-        services,
-        searchLocation: { lat: params.lat, lng: params.lng },
-        maxDistance: params.maxDistance
-      }
-    });
-  } catch (err) {
-    if (err.name === 'MongooseError' && err.message.includes('operation timed out')) {
-      throw createValidationError('query', 'Nearby search timed out. Please try a smaller radius.');
+  res.json({
+    success: true,
+    data: {
+      services,
+      searchLocation: { lat: params.lat, lng: params.lng },
+      maxDistance: params.maxDistance
     }
-    throw err;
+  });
+}));
+
+// ──────────────────────────────────────────────
+// CRUD Routes for Single Emergency Service
+// ──────────────────────────────────────────────
+
+// GET /api/services/:id
+router.get('/:id', optionalAuth, asyncHandler(async (req, res) => {
+  const service = await EmergencyService.findById(req.params.id)
+    .populate('addedBy', 'name email');
+  if (!service) {
+    return res.status(404).json({ success: false, message: 'Service not found' });
   }
+  res.json({ success: true, data: service });
+}));
+
+// PUT /api/services/:id
+router.put('/:id', protect, requireAdmin, asyncHandler(async (req, res) => {
+  const updated = await EmergencyService.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true, runValidators: true }
+  );
+  if (!updated) {
+    return res.status(404).json({ success: false, message: 'Service not found' });
+  }
+  res.json({ success: true, data: updated });
+}));
+
+// DELETE /api/services/:id
+router.delete('/:id', protect, requireAdmin, asyncHandler(async (req, res) => {
+  const deleted = await EmergencyService.findByIdAndUpdate(
+    req.params.id,
+    { isActive: false },
+    { new: true }
+  );
+  if (!deleted) {
+    return res.status(404).json({ success: false, message: 'Service not found' });
+  }
+  res.json({ success: true, data: deleted });
 }));
 
 module.exports = router;
