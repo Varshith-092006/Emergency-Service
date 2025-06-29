@@ -23,6 +23,7 @@ const { errorHandler } = require('./middleware/errorHandler');
 const { protect, requireAdmin } = require('./middleware/auth');
 
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 // Enhanced CORS configuration
