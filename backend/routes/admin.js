@@ -172,6 +172,9 @@ router.get('/analytics/sos', protect, requireAdmin, asyncHandler(async (req, res
   });
 }));
 
+// routes/admin.js
+// …top of file stays the same…
+
 router.post(
   '/services/bulk-upload',
   protect,
@@ -183,47 +186,46 @@ router.post(
     }
 
     const csv = require('csv-parser');
-    const fs = require('fs');
+    const fs  = require('fs');
     const results = [];
 
-    // Read and parse the CSV file
+    // Parse CSV to JS objects
     fs.createReadStream(req.file.path)
       .pipe(csv())
-      .on('data', (data) => {
-        // Transform CSV data to match your schema
+      .on('data', (row) => {
         results.push({
-          name: data.name,
-          type: data.type,
-          contact: {
-            phone: data.phone
-          },
+          name: row.name,
+          type: row.type,                       // must match enum
+          category: row.category || 'emergency',
+          contact: { phone: row.phone, email: row.email },
           location: {
             type: 'Point',
-            coordinates: [parseFloat(data.longitude || 0), parseFloat(data.latitude || 0)],
-            address: {
-              fullAddress: data.address
-            }
+            coordinates: [
+              parseFloat(row.longitude || 0),
+              parseFloat(row.latitude  || 0)
+            ],
+            address: { fullAddress: row.address }
           },
-          isActive: true
+          isActive: row.isActive !== 'false',
+          addedBy:  req.user._id               // ✅ inject the uploader!
         });
       })
       .on('end', async () => {
         try {
-          // Insert all records
-          await EmergencyService.insertMany(results);
-          // Delete the temporary file
-          fs.unlinkSync(req.file.path);
-          
+          await EmergencyService.insertMany(results, { ordered: false });
+          fs.unlinkSync(req.file.path);        // clean up temp file
           res.status(201).json({
             success: true,
             message: `${results.length} services imported successfully`
           });
-        } catch (error) {
+        } catch (err) {
           fs.unlinkSync(req.file.path);
-          throw error;
+          // Forward to your global error handler
+          throw err;
         }
       });
   })
 );
+
 
 module.exports = router; 

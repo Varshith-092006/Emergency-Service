@@ -191,7 +191,7 @@ const emergencyServiceSchema = new mongoose.Schema({
 });
 
 // Indexes for efficient queries
-emergencyServiceSchema.index({ 'location.coordinates': '2dsphere' });
+// emergencyServiceSchema.index({ 'location.coordinates': '2dsphere' });
 emergencyServiceSchema.index({ type: 1, isActive: 1 });
 emergencyServiceSchema.index({ 'location.address.city': 1, 'location.address.state': 1 });
 emergencyServiceSchema.index({ tags: 1 });
