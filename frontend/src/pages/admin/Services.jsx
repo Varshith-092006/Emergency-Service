@@ -793,38 +793,42 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
+const daysOfWeek = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+
+const initialForm = {
+  name:'', type:'hospital', category:'emergency', description:'',
+  contact:{ phone:'', email:'', website:'' },
+  location:{
+    coordinates:[0,0],
+    address:{ street:'', city:'', state:'', pincode:'', country:'India', fullAddress:'' }
+  },
+  operatingHours:{
+    is24Hours:false,
+    monday:{ open:'09:00', close:'17:00', isOpen:true },
+    tuesday:{ open:'09:00', close:'17:00', isOpen:true },
+    wednesday:{ open:'09:00', close:'17:00', isOpen:true },
+    thursday:{ open:'09:00', close:'17:00', isOpen:true },
+    friday:{ open:'09:00', close:'17:00', isOpen:true },
+    saturday:{ open:'09:00', close:'17:00', isOpen:true },
+    sunday:{ open:'09:00', close:'17:00', isOpen:true }
+  },
+  isActive:true
+};
+
 const AdminServices = () => {
   const qc = useQueryClient();
-  const [search, setSearch]         = useState('');
-  const [showUpload, setShowUpload] = useState(false);
-  const [csvFile, setCsvFile]       = useState(null);
-  const [showCsvFormat, setShowCsvFormat] = useState(false);
 
-  const [editingId, setEditingId]   = useState(null);
-  const [form, setForm] = useState({
-    name:'', type:'hospital', category:'emergency',
-    description:'',
-    contact:{ phone:'', email:'', website:'' },
-    location:{
-      coordinates:[0,0],
-      address:{ street:'', city:'', state:'', pincode:'', country:'India', fullAddress:'' }
-    },
-    operatingHours:{
-      is24Hours:false,
-      monday:{ open:'09:00', close:'17:00', isOpen:true },
-      tuesday:{ open:'09:00', close:'17:00', isOpen:true },
-      wednesday:{ open:'09:00', close:'17:00', isOpen:true },
-      thursday:{ open:'09:00', close:'17:00', isOpen:true },
-      friday:{ open:'09:00', close:'17:00', isOpen:true },
-      saturday:{ open:'09:00', close:'17:00', isOpen:true },
-      sunday:{ open:'09:00', close:'17:00', isOpen:true }
-    },
-    isActive:true
-  });
+  const [search,setSearch]                       = useState('');
+  const [showUpload,setShowUpload]               = useState(false);
+  const [csvFile,setCsvFile]                     = useState(null);
+  const [showCsvFormat,setShowCsvFormat]         = useState(false);
 
-  /* ─────────────────────────────────────
-     Queries
-  ───────────────────────────────────── */
+  const [editingId,setEditingId]                 = useState(null);
+  const [form,setForm]                           = useState(initialForm);
+
+  /*──────────────────────────────────────────────
+    Queries
+  ───────────────────────────────────────────────*/
   const { data:services, isLoading, isError } = useQuery(
     ['admin-services',search],
     async ()=>{
@@ -833,18 +837,18 @@ const AdminServices = () => {
     }
   );
 
-  /* ─────────────────────────────────────
-     Mutations
-  ───────────────────────────────────── */
+  /*──────────────────────────────────────────────
+    Mutations
+  ───────────────────────────────────────────────*/
   const uploadMutation = useMutation(
-    fd => api.post('/api/admin/services/bulk-upload',fd,{ headers:{'Content-Type':'multipart/form-data'} }),
+    fd => api.post('/api/admin/services/bulk-upload', fd, { headers:{'Content-Type':'multipart/form-data'} }),
     {
       onSuccess:()=>{
         toast.success('Services uploaded');
         qc.invalidateQueries('admin-services');
         setCsvFile(null); setShowUpload(false);
       },
-      onError:err => toast.error(err.response?.data?.message || 'Upload failed')
+      onError:err=> toast.error(err.response?.data?.message || 'Upload failed')
     }
   );
 
@@ -868,26 +872,28 @@ const AdminServices = () => {
         qc.invalidateQueries('admin-services');
       },
       onError:err=>{
-        console.error(err.response?.data);          // <-- show exact validation error
+        console.error('Backend validation:',err.response?.data);
         toast.error(err.response?.data?.message || 'Update failed');
       }
     }
   );
 
-  /* ─────────────────────────────────────
-     Handlers
-  ───────────────────────────────────── */
-  const handleUpload = async e => {
+  /*──────────────────────────────────────────────
+    Handlers
+  ───────────────────────────────────────────────*/
+  const handleUpload = async (e)=>{
     e.preventDefault();
-    if (!csvFile) return toast.error('Select a CSV');
+    if(!csvFile) return toast.error('Select a CSV file');
     const fd = new FormData(); fd.append('csv',csvFile);
     await uploadMutation.mutateAsync(fd);
   };
 
-  const startEdit = svc => {
+  const startEdit = svc =>{
     setEditingId(svc._id);
     setForm({
-      name:svc.name, type:svc.type, category:svc.category || 'emergency',
+      name:svc.name,
+      type:svc.type,
+      category:svc.category || 'emergency',
       description:svc.description || '',
       contact:{
         phone:svc.contact?.phone || '',
@@ -898,39 +904,39 @@ const AdminServices = () => {
         coordinates:[ ...svc.location.coordinates ],
         address:{
           street:svc.location.address?.street || '',
-          city  :svc.location.address?.city   || '',
-          state :svc.location.address?.state  || '',
+          city:svc.location.address?.city || '',
+          state:svc.location.address?.state || '',
           pincode:svc.location.address?.pincode || '',
           country:svc.location.address?.country || 'India',
           fullAddress:svc.location.address?.fullAddress || ''
         }
       },
-      operatingHours: svc.operatingHours || form.operatingHours,
-      isActive: svc.isActive !== false
+      operatingHours:svc.operatingHours || initialForm.operatingHours,
+      isActive:svc.isActive !== false
     });
   };
 
-  const handleUpdate = async e => {
+  const handleUpdate = async e =>{
     e.preventDefault();
 
-    /* client‑side sanity checks */
-    if (!form.name.trim())  return toast.error('Name required');
-    if (!form.contact.phone.trim()) return toast.error('Phone required');
+    /* Basic client validation */
+    if(!form.name.trim())  return toast.error('Name required');
+    if(!form.contact.phone.trim()) return toast.error('Phone required');
 
     const lon = Number(form.location.coordinates[0]);
     const lat = Number(form.location.coordinates[1]);
-    if (Number.isNaN(lon) || Number.isNaN(lat)) return toast.error('Invalid coordinates');
+    if(Number.isNaN(lon) || Number.isNaN(lat)) return toast.error('Invalid coordinates');
 
     await updateMutation.mutateAsync({
       ...form,
       location:{
         ...form.location,
-        coordinates:[ lon, lat ]
+        coordinates:[lon,lat]
       }
     });
   };
 
-  const toggleDay = day => {
+  const toggleDay = day=>{
     setForm(p=>({
       ...p,
       operatingHours:{
@@ -940,63 +946,285 @@ const AdminServices = () => {
     }));
   };
 
-  const toggle24h = () =>{
+  const toggle24h = ()=>{
     setForm(p=>({
       ...p,
       operatingHours:{ ...p.operatingHours, is24Hours:!p.operatingHours.is24Hours }
     }));
   };
 
-  /* ─────────────────────────────────────
-     JSX
-  ───────────────────────────────────── */
+  /*──────────────────────────────────────────────
+    JSX
+  ───────────────────────────────────────────────*/
   return (
-    <div className="p-6">
-      {/* header + search + upload */}
-      {/* ...header/upload UI unchanged for brevity... */}
-      {/* services list */}
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="animate-spin w-10 h-10 text-blue-600"/>
+  <div className="p-6">
+    {/* Header */}
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-2xl font-bold text-gray-800">Manage Emergency Services</h1>
+      <button onClick={()=>setShowUpload(!showUpload)} className="btn btn-primary">
+        {showUpload ? <><X className="w-5 h-5"/> Cancel Upload</> : <><Upload className="w-5 h-5"/> Bulk Upload</>}
+      </button>
+    </div>
+
+    {/* Search + Upload */}
+    <div className="mb-6">
+      <div className="relative max-w-md mb-4">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-gray-400"/>
         </div>
-      ) : isError ? (
-        <div className="alert alert-error">
-          <AlertTriangle className="w-5 h-5"/>
-          <span>Failed to load services.</span>
-        </div>
-      ) : (
-        <div className="space-y-4">
+        <input
+          type="text"
+          placeholder="Search services…"
+          className="input input-bordered pl-10 w-full"
+          value={search}
+          onChange={e=>setSearch(e.target.value)}
+        />
+      </div>
+
+      {showUpload && (
+        <form onSubmit={handleUpload} className="bg-white p-4 rounded-lg shadow mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Upload CSV File
+            <button
+              type="button"
+              onClick={()=>setShowCsvFormat(!showCsvFormat)}
+              className="ml-2 text-blue-600 text-xs"
+            >
+              {showCsvFormat ? 'Hide format' : 'Show required format'}
+            </button>
+          </label>
+
+          {showCsvFormat && (
+            <div className="bg-gray-50 p-3 rounded mb-3 text-sm">
+              <p className="font-medium mb-1">CSV must include:</p>
+              <ul className="list-disc list-inside text-gray-700 text-sm space-y-1">
+                <li>name, type, phone, longitude, latitude (required)</li>
+                <li>optional: description, city, state, fullAddress …</li>
+              </ul>
+            </div>
+          )}
+
+          <div className="flex items-center gap-4">
+            <input
+              type="file"
+              accept=".csv"
+              onChange={e=>setCsvFile(e.target.files[0])}
+              className="file-input file-input-bordered w-full"
+            />
+            <button type="submit" disabled={uploadMutation.isLoading} className="btn btn-success">
+              {uploadMutation.isLoading ? <Loader2 className="animate-spin w-5 h-5"/> : <Upload className="w-5 h-5"/>}
+              Upload
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+
+    {/* list */}
+    {isLoading ? (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="animate-spin w-10 h-10 text-blue-600"/>
+      </div>
+    ) : isError ? (
+      <div className="alert alert-error"><AlertTriangle className="w-5 h-5"/><span>Failed to load services</span></div>
+    ) : (
+      <div className="space-y-4">
         {services?.length===0 ? (
           <div className="alert alert-info"><span>No services found</span></div>
         ) : services.map(svc=>(
           <div key={svc._id} className="bg-white rounded-lg shadow">
             {editingId===svc._id ? (
-              /* ───── edit form (handleUpdate) ───── */
-              /*  (form JSX unchanged except it uses `form` state + handlers) */
+              /*──────────── EDIT FORM ────────────*/
               <form onSubmit={handleUpdate} className="p-4">
-                {/* form fields – use `form` + setForm, exactly as before */}
+                {/* Basic */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {/* Name */}
+                  <div>
+                    <label className="form-label">Name*</label>
+                    <input className="input input-bordered w-full"
+                      value={form.name} required
+                      onChange={e=>setForm({...form,name:e.target.value})}/>
+                  </div>
+                  {/* Type */}
+                  <div>
+                    <label className="form-label">Type*</label>
+                    <select className="select select-bordered w-full"
+                      value={form.type}
+                      onChange={e=>setForm({...form,type:e.target.value})} required>
+                      {['hospital','police','ambulance','fire','pharmacy','veterinary','other']
+                        .map(t=><option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  {/* Category */}
+                  <div>
+                    <label className="form-label">Category*</label>
+                    <select className="select select-bordered w-full"
+                      value={form.category}
+                      onChange={e=>setForm({...form,category:e.target.value})} required>
+                      {['emergency','urgent','routine'].map(c=><option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  {/* Status */}
+                  <div>
+                    <label className="form-label">Status</label>
+                    <select className="select select-bordered w-full"
+                      value={String(form.isActive)}
+                      onChange={e=>setForm({...form,isActive:e.target.value==='true'})}>
+                      <option value="true">Active</option>
+                      <option value="false">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Contact */}
+                <h3 className="font-semibold mb-2">Contact</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <input type="tel"   className="input input-bordered w-full"
+                    placeholder="Phone*" required
+                    value={form.contact.phone}
+                    onChange={e=>setForm({...form,contact:{...form.contact,phone:e.target.value}})}/>
+                  <input type="email" className="input input-bordered w-full"
+                    placeholder="Email"
+                    value={form.contact.email}
+                    onChange={e=>setForm({...form,contact:{...form.contact,email:e.target.value}})}/>
+                  <input type="url"   className="input input-bordered w-full"
+                    placeholder="Website"
+                    value={form.contact.website}
+                    onChange={e=>setForm({...form,contact:{...form.contact,website:e.target.value}})}/>
+                </div>
+
+                {/* Coordinates */}
+                <h3 className="font-semibold mb-2">Coordinates</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <input type="number" step="any" className="input input-bordered w-full" required
+                    placeholder="Longitude"
+                    value={form.location.coordinates[0]}
+                    onChange={e=>setForm({...form,location:{
+                      ...form.location,
+                      coordinates:[ Number(e.target.value), form.location.coordinates[1] ]
+                    }})}/>
+                  <input type="number" step="any" className="input input-bordered w-full" required
+                    placeholder="Latitude"
+                    value={form.location.coordinates[1]}
+                    onChange={e=>setForm({...form,location:{
+                      ...form.location,
+                      coordinates:[ form.location.coordinates[0], Number(e.target.value) ]
+                    }})}/>
+                </div>
+
+                {/* Address */}
+                <h3 className="font-semibold mb-2">Address</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <input className="input input-bordered w-full" placeholder="Street"
+                    value={form.location.address.street}
+                    onChange={e=>setForm({...form,location:{...form.location,address:{...form.location.address,street:e.target.value}}})}/>
+                  <input className="input input-bordered w-full" placeholder="City*" required
+                    value={form.location.address.city}
+                    onChange={e=>setForm({...form,location:{...form.location,address:{...form.location.address,city:e.target.value}}})}/>
+                  <input className="input input-bordered w-full" placeholder="State*" required
+                    value={form.location.address.state}
+                    onChange={e=>setForm({...form,location:{...form.location,address:{...form.location.address,state:e.target.value}}})}/>
+                  <input className="input input-bordered w-full" placeholder="Pincode"
+                    value={form.location.address.pincode}
+                    onChange={e=>setForm({...form,location:{...form.location,address:{...form.location.address,pincode:e.target.value}}})}/>
+                  <textarea className="textarea textarea-bordered md:col-span-2" placeholder="Full address*" required
+                    value={form.location.address.fullAddress}
+                    onChange={e=>setForm({...form,location:{...form.location,address:{...form.location.address,fullAddress:e.target.value}}})}/>
+                </div>
+
+                {/* 24h toggle + per‑day */}
+                <h3 className="font-semibold mb-2">Operating Hours</h3>
+                <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                  <input type="checkbox" className="checkbox checkbox-primary"
+                    checked={form.operatingHours.is24Hours} onChange={toggle24h}/>
+                  <span>Open 24 Hours</span>
+                </label>
+                {!form.operatingHours.is24Hours && (
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {daysOfWeek.map(day=>(
+                      <div key={day} className="border rounded p-3">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="capitalize">{day}</span>
+                          <input type="checkbox" className="toggle toggle-primary"
+                            checked={form.operatingHours[day].isOpen}
+                            onChange={()=>toggleDay(day)}/>
+                        </div>
+                        {form.operatingHours[day].isOpen && (
+                          <div className="flex gap-2">
+                            <input type="time" className="input input-bordered w-full"
+                              value={form.operatingHours[day].open}
+                              onChange={e=>setForm(p=>({
+                                ...p, operatingHours:{ ...p.operatingHours,
+                                  [day]:{ ...p.operatingHours[day], open:e.target.value } } }))}/>
+                            <input type="time" className="input input-bordered w-full"
+                              value={form.operatingHours[day].close}
+                              onChange={e=>setForm(p=>({
+                                ...p, operatingHours:{ ...p.operatingHours,
+                                  [day]:{ ...p.operatingHours[day], close:e.target.value } } }))}/>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* actions */}
+                <div className="flex justify-end gap-2 mt-6">
+                  <button type="button" className="btn btn-ghost" onClick={()=>setEditingId(null)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={updateMutation.isLoading}>
+                    {updateMutation.isLoading ? <Loader2 className="animate-spin w-5 h-5"/> : 'Save'}
+                  </button>
+                </div>
               </form>
             ) : (
-              /* ───── display card ───── */
-              /*  (card JSX unchanged, same as earlier) */
+              /*──────────── DISPLAY CARD ────────────*/
               <div className="p-4">
-                {/* …display code as before… */}
-                <button onClick={()=>startEdit(svc)} className="btn btn-sm btn-square btn-ghost" title="Edit">
-                  <Edit className="w-5 h-5"/>
-                </button>
-                <button onClick={()=>deleteMutation.mutate(svc._id)} disabled={deleteMutation.isLoading}
-                  className="btn btn-sm btn-square btn-ghost text-error" title="Delete">
-                  {deleteMutation.isLoading && deleteMutation.variables===svc._id
-                    ? <Loader2 className="animate-spin w-5 h-5"/>
-                    : <Trash2 className="w-5 h-5"/>}
-                </button>
+                <div className="flex justify-between">
+                  <div>
+                    <h3 className="font-semibold">{svc.name}</h3>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      <span className="badge badge-primary capitalize">{svc.type}</span>
+                      <span className="badge badge-secondary capitalize">{svc.category}</span>
+                      {svc.isActive
+                        ? <span className="badge badge-success">Active</span>
+                        : <span className="badge badge-error">Inactive</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="btn btn-sm btn-square btn-ghost" title="Edit" onClick={()=>startEdit(svc)}>
+                      <Edit className="w-5 h-5"/>
+                    </button>
+                    <button className="btn btn-sm btn-square btn-ghost text-error" title="Delete"
+                      disabled={deleteMutation.isLoading}
+                      onClick={()=>{ if(window.confirm('Delete this?')) deleteMutation.mutate(svc._id); }}>
+                      {deleteMutation.isLoading && deleteMutation.variables===svc._id
+                        ? <Loader2 className="animate-spin w-5 h-5"/>
+                        : <Trash2 className="w-5 h-5"/>}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Location + Hours collapsible simplified for brevity */}
+                <div className="mt-4 grid md:grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div>
+                    <div className="font-medium flex items-center gap-1"><MapPin className="w-4 h-4"/>Location</div>
+                    <div>{svc.location.address.fullAddress}</div>
+                    <div>Coords: {svc.location.coordinates[1].toFixed(4)}, {svc.location.coordinates[0].toFixed(4)}</div>
+                  </div>
+                  <div>
+                    <div className="font-medium flex items-center gap-1"><Clock className="w-4 h-4"/>Hours</div>
+                    {svc.operatingHours?.is24Hours ? '24 Hours' :
+                      daysOfWeek.filter(d=>svc.operatingHours?.[d]?.isOpen).map(d=>
+                        <div key={d} className="capitalize">{d}: {svc.operatingHours[d].open}‑{svc.operatingHours[d].close}</div>)}
+                  </div>
+                </div>
               </div>
             )}
           </div>
         ))}
-        </div>
-      )}
-    </div>
+      </div>
+    )}
+  </div>
   );
 };
 
