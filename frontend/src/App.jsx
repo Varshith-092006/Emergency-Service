@@ -27,14 +27,13 @@ import AdminSOS from './pages/admin/SOS';
 import AdminAnalytics from './pages/admin/Analytics';
 import NotFoundPage from './pages/NotFoundPage';
 import About from './pages/About.jsx';
-import HelpPage from './pages/HelpPage.jsx';
-import ContactPage from './pages/ContactPage.jsx';
-import SosAlertsPage from './pages/SosAlertsPage.jsx';
 
 // Styles
 import './styles/globals.css';
 import 'leaflet/dist/leaflet.css';
-
+import HelpPage from './pages/HelpPage.jsx';
+import ContactPage from './pages/ContactPage.jsx';
+import SosAlertsPage from './pages/SosAlertsPage.jsx';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -95,11 +94,15 @@ function AppRoutes() {
         </AdminRoute>
       } />
       
-      <Route path="/admin/alerts" element={
+      <Route path="/admin/sos" element={
         <AdminRoute>
-          <SosAlertsPage/>
+          <AdminSOS />
         </AdminRoute>
       } />
+
+      <Route path='/admin/alerts'  element={
+        <SosAlertsPage/>
+      }/>
       
       <Route path="/admin/analytics" element={
         <AdminRoute>
