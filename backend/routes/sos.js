@@ -11,78 +11,112 @@ const router = express.Router();
 // @route   POST /api/sos
 // @desc    Create SOS alert
 // @access  Private
-router.post('/', protect, asyncHandler(async (req, res) => {
+// @route   POST /api/sos
+// @desc    Create SOS alert
+// @access  Private
+router.post('/', protect, [
+  body('lat').isFloat({ min: -90, max: 90 }).withMessage('Valid latitude required'),
+  body('lng').isFloat({ min: -180, max: 180 }).withMessage('Valid longitude required'),
+  body('emergencyType').isIn(['medical', 'police', 'fire', 'other']).withMessage('Valid emergency type required'),
+  body('description').optional().isString().withMessage('Description must be a string')
+], asyncHandler(async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    throw createValidationError(errors.array());
+  }
+
   const { 
     lat, 
     lng, 
-    address, 
+    address = '', 
     emergencyType, 
-    description,
+    description = '',
     accuracy 
   } = req.body;
 
-  if (!lat || !lng) {
-    throw createValidationError('location', 'Latitude and longitude are required');
-  }
+  try {
+    // Create SOS alert
+    const sosData = {
+      user: req.user._id,
+      location: {
+        type: 'Point',
+        coordinates: [parseFloat(lng), parseFloat(lat)],
+        address,
+        accuracy
+      },
+      emergencyType,
+      description,
+      status: 'pending'
+    };
 
-  if (!emergencyType) {
-    throw createValidationError('emergencyType', 'Emergency type is required');
-  }
+    const sos = await SOS.create(sosData);
 
-  // Create SOS alert
-  const sosData = {
-    user: req.user._id,
-    location: {
-      type: 'Point',
-      coordinates: [parseFloat(lng), parseFloat(lat)],
-      address,
-      accuracy
-    },
-    emergencyType,
-    description
-  };
-
-  const sos = await SOS.create(sosData);
-
-  // Find nearby emergency services
-  const coordinates = [parseFloat(lng), parseFloat(lat)];
-  const nearbyServices = await EmergencyService.findNearby(coordinates, {
-    maxDistance: 5,
-    type: emergencyType === 'medical' ? 'hospital' : 
-          emergencyType === 'police' ? 'police' : 
-          emergencyType === 'fire' ? 'fire' : null
-  });
-
-  // Add contacted services to SOS
-  for (const service of nearbyServices.slice(0, 3)) { // Contact top 3 nearest services
-    await sos.addContactedService(service._id);
-  }
-
-  // Send notifications to emergency contacts
-  if (req.user.emergencyContacts && req.user.emergencyContacts.length > 0) {
-    const contacts = req.user.emergencyContacts.map(contact => contact.phone);
+    // Find nearby emergency services
+    const coordinates = [parseFloat(lng), parseFloat(lat)];
+    let nearbyServices = [];
     
-    // Mark SMS notification as sent (implement actual SMS sending)
-    await sos.markNotificationSent('sms', contacts, 
-      `SOS Alert: ${req.user.name} needs help at ${address || 'current location'}. Emergency type: ${emergencyType}`
-    );
-
-    // Mark email notification as sent (implement actual email sending)
-    if (req.user.preferences.notificationSettings.email) {
-      await sos.markNotificationSent('email', [req.user.email], 
-        `SOS Alert for ${req.user.name}`
-      );
+    try {
+      nearbyServices = await EmergencyService.findNearby(coordinates, {
+        maxDistance: 5,
+        type: emergencyType === 'medical' ? 'hospital' : 
+              emergencyType === 'police' ? 'police' : 
+              emergencyType === 'fire' ? 'fire' : null
+      });
+    } catch (err) {
+      console.error('Error finding nearby services:', err);
+      // Continue even if we can't find nearby services
     }
+
+    // Add contacted services to SOS
+    if (nearbyServices.length > 0) {
+      for (const service of nearbyServices.slice(0, 3)) {
+        try {
+          await sos.addContactedService(service._id);
+        } catch (err) {
+          console.error('Error adding contacted service:', err);
+        }
+      }
+    }
+
+    // Send notifications to emergency contacts
+    if (req.user.emergencyContacts?.length > 0) {
+      const contacts = req.user.emergencyContacts.map(contact => contact.phone);
+      
+      try {
+        await sos.markNotificationSent('sms', contacts, 
+          `SOS Alert: ${req.user.name} needs help at ${address || 'current location'}. Emergency type: ${emergencyType}`
+        );
+      } catch (err) {
+        console.error('Error sending SMS notifications:', err);
+      }
+
+      if (req.user.preferences?.notificationSettings?.email) {
+        try {
+          await sos.markNotificationSent('email', [req.user.email], 
+            `SOS Alert for ${req.user.name}`
+          );
+        } catch (err) {
+          console.error('Error sending email notifications:', err);
+        }
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'SOS alert created successfully',
+      data: {
+        sos,
+        contactedServices: nearbyServices.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating SOS:', error);
+    if (error.name === 'ValidationError') {
+      throw createValidationError(error.message);
+    }
+    throw error;
   }
-
-  res.status(201).json({
-    success: true,
-    message: 'SOS alert created successfully',
-    data: {
-      sos,
-      contactedServices: nearbyServices.length
-    }
-  });
 }));
 
 // @route   GET /api/sos

@@ -61,26 +61,28 @@ const MapPage = () => {
   );
 
   const handleSOS = async () => {
-    if (!currentLocation) {
-      toast.error('Please enable location services to send SOS');
-      return;
-    }
-    try {
-      await Promise.all([
-        sendSOSAlert(currentLocation, 'other'),
-        api.post('/api/sos', {
-          lat: currentLocation.lat,
-          lng: currentLocation.lng,
-          emergencyType: 'other',
-          description: 'Emergency SOS from map interface',
-        })
-      ]);
-      toast.success('🚨 Emergency alert sent successfully!');
-    } catch (error) {
-      console.error('SOS Error:', error);
-      toast.error('Failed to send emergency alert. Please try again.');
-    }
-  };
+  if (!currentLocation) {
+    toast.error('Please enable location services to send SOS');
+    return;
+  }
+  try {
+    await Promise.all([
+      sendSOSAlert(currentLocation, 'other'),
+      api.post('/api/sos', {
+        lat: currentLocation.lat,
+        lng: currentLocation.lng,
+        emergencyType: 'other',
+        address: address || 'Current location',
+        description: 'Emergency SOS from map interface',
+        accuracy: 50 // Add accuracy if available
+      })
+    ]);
+    toast.success('🚨 Emergency alert sent successfully!');
+  } catch (error) {
+    console.error('SOS Error:', error);
+    toast.error(error.response?.data?.message || 'Failed to send emergency alert. Please try again.');
+  }
+};
 
   const handleRefreshLocation = async () => {
     try {
