@@ -6,7 +6,7 @@ import { useSocket } from '../../contexts/SocketContext.jsx';
 
 const AdminSOS = () => {
   const { data, isLoading, refetch } = useQuery('admin-sos', async () => {
-    const res = await api.get('/sos/admin/active');
+    const res = await api.get('api/sos/admin/active');
     return res.data.data.activeSos;
   });
   const { socket } = useSocket();

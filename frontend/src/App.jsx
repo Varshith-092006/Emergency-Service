@@ -100,9 +100,9 @@ function AppRoutes() {
         </AdminRoute>
       } />
 
-      <Route path='/admin/alerts'  element={
+      {/* <Route path='/admin/alerts'  element={
         <SosAlertsPage/>
-      }/>
+      }/> */}
       
       <Route path="/admin/analytics" element={
         <AdminRoute>
