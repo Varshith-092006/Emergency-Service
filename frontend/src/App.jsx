@@ -94,7 +94,7 @@ function AppRoutes() {
         </AdminRoute>
       } />
       
-      <Route path="/admin/sos" element={
+      <Route path="/admin/alerts" element={
         <AdminRoute>
           <AdminSOS />
         </AdminRoute>
