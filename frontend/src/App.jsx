@@ -33,7 +33,7 @@ import './styles/globals.css';
 import 'leaflet/dist/leaflet.css';
 import HelpPage from './pages/HelpPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
-import SosAlertsPage from './pages/SosAlertsPage.jsx';
+// import SosAlertsPage from './pages/SosAlertsPage.jsx';
 
 // Create a client
 const queryClient = new QueryClient({
