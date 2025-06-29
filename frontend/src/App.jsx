@@ -33,7 +33,7 @@ import './styles/globals.css';
 import 'leaflet/dist/leaflet.css';
 import HelpPage from './pages/HelpPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
-// import SosAlertsPage from './pages/SosAlertsPage.jsx';
+import SosAlertsPage from './pages/SosAlertsPage.jsx';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -96,13 +96,10 @@ function AppRoutes() {
       
       <Route path="/admin/alerts" element={
         <AdminRoute>
-          <AdminSOS />
+          {/* <AdminSOS /> */}
+          <SosAlertsPage />
         </AdminRoute>
       } />
-
-      {/* <Route path='/admin/alerts'  element={
-        <SosAlertsPage/>
-      }/> */}
       
       <Route path="/admin/analytics" element={
         <AdminRoute>

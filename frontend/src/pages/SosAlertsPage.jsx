@@ -5,10 +5,10 @@ import {
   Filter, RefreshCw, ChevronDown, ChevronUp,
   Phone, Mail, User, Shield, Check, X
 } from 'lucide-react';
-import api from '../../services/api';
+import api from '../services/api'; // Updated import path
 import { toast } from 'react-hot-toast';
-import MapComponent from '../../components/map/MapComponent';
-import Badge from '../../components/ui/Badge';
+import MapComponent from '../components/map/MapComponent'; // Updated import path
+import Badge from '../components/ui/Badge'; // Updated import path
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending', color: 'bg-yellow-500' },
