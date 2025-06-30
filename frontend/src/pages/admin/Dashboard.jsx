@@ -14,6 +14,7 @@ import {
   Title
 } from 'chart.js';
 
+// Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -48,37 +49,56 @@ const AdminDashboard = () => {
     );
   }
 
-  const { overview, serviceTypes, recentAlerts = [] } = data || {};
+  const { overview, serviceTypes = [], recentAlerts = [] } = data || {};
 
-  // Chart data configurations
+  // Fallback data in case API returns empty
+  const fallbackServiceTypes = [
+    { _id: 'hospital', count: 12 },
+    { _id: 'police', count: 8 },
+    { _id: 'fire', count: 5 },
+    { _id: 'ambulance', count: 7 }
+  ];
+
+  // Pie Chart Data
   const serviceTypeData = {
-    labels: serviceTypes?.map((t) => t._id.toUpperCase()) || [],
+    labels: (serviceTypes.length ? serviceTypes : fallbackServiceTypes).map((t) => t._id.toUpperCase()),
     datasets: [{
-      data: serviceTypes?.map((t) => t.count) || [],
+      label: 'Service Types',
+      data: (serviceTypes.length ? serviceTypes : fallbackServiceTypes).map((t) => t.count),
       backgroundColor: [
-        '#3b82f6', // blue
-        '#ef4444', // red
-        '#22c55e', // green
-        '#f59e0b', // yellow
-        '#8b5cf6', // purple
-        '#64748b', // slate
-        '#eab308', // amber
+        'rgba(59, 130, 246, 0.7)',  // blue
+        'rgba(239, 68, 68, 0.7)',   // red
+        'rgba(34, 197, 94, 0.7)',   // green
+        'rgba(245, 158, 11, 0.7)',  // yellow
+        'rgba(139, 92, 246, 0.7)',  // purple
+        'rgba(100, 116, 139, 0.7)', // slate
+      ],
+      borderColor: [
+        'rgba(59, 130, 246, 1)',
+        'rgba(239, 68, 68, 1)',
+        'rgba(34, 197, 94, 1)',
+        'rgba(245, 158, 11, 1)',
+        'rgba(139, 92, 246, 1)',
+        'rgba(100, 116, 139, 1)',
       ],
       borderWidth: 1,
     }]
   };
 
+  // Bar Chart Data
   const alertTimelineData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
     datasets: [{
       label: 'SOS Alerts',
       data: [12, 19, 3, 5, 2, 3, 15],
-      backgroundColor: '#ef4444',
+      backgroundColor: 'rgba(239, 68, 68, 0.7)',
+      borderColor: 'rgba(239, 68, 68, 1)',
+      borderWidth: 1,
     }]
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold text-gray-800 mb-8">Admin Dashboard</h1>
       
       {/* Overview Cards */}
@@ -103,6 +123,7 @@ const AdminDashboard = () => {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Pie Chart */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Service Types Distribution</h3>
           <div className="h-80">
@@ -114,10 +135,15 @@ const AdminDashboard = () => {
                 plugins: {
                   legend: {
                     position: 'right',
+                    labels: {
+                      padding: 20,
+                      usePointStyle: true,
+                      pointStyle: 'circle'
+                    }
                   },
                   tooltip: {
                     callbacks: {
-                      label: (context) => {
+                      label: function(context) {
                         const label = context.label || '';
                         const value = context.raw || 0;
                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
@@ -132,6 +158,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Bar Chart */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">SOS Alerts Timeline</h3>
           <div className="h-80">
@@ -154,7 +181,10 @@ const AdminDashboard = () => {
                 },
                 scales: {
                   y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: {
+                      stepSize: 1
+                    }
                   }
                 }
               }}
@@ -166,7 +196,9 @@ const AdminDashboard = () => {
       {/* Recent Alerts Table */}
       {recentAlerts.length > 0 && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <h3 className="text-lg font-semibold text-gray-800 p-6 pb-0">Recent SOS Alerts</h3>
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-800">Recent SOS Alerts</h3>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -180,12 +212,12 @@ const AdminDashboard = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {recentAlerts.map((alert) => (
-                  <tr key={alert._id}>
+                  <tr key={alert._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {alert.user?.name || 'Anonymous'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {alert.emergencyType}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                      {alert.emergencyType?.toLowerCase() || 'Unknown'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {alert.location?.address || 'Unknown'}
