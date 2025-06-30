@@ -106,25 +106,22 @@ const AdminServices = () => {
   );
 
   // Update service mutation
-  // Update service mutation
-const updateMutation = useMutation(
-  (updatedService) => {
-    // Log the data being sent for debugging
-    console.log('Sending update:', updatedService);
-    return api.put(`/api/services/${editingService}`, updatedService);
-  },
-  {
-    onSuccess: () => {
-      toast.success('Service updated successfully');
-      setEditingService(null);
-      queryClient.invalidateQueries('admin-services');
+  const updateMutation = useMutation(
+    (updatedService) => {
+      return api.put(`/api/services/${editingService}`, updatedService);
     },
-    onError: (error) => {
-      console.error('Update error details:', error.response?.data);
-      toast.error(error.response?.data?.message || 'Failed to update service');
+    {
+      onSuccess: () => {
+        toast.success('Service updated successfully');
+        setEditingService(null);
+        queryClient.invalidateQueries('admin-services');
+      },
+      onError: (error) => {
+        console.error('Update error details:', error.response?.data);
+        toast.error(error.response?.data?.message || 'Failed to update service');
+      }
     }
-  }
-);
+  );
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -165,37 +162,41 @@ const updateMutation = useMutation(
       operatingHours: service.operatingHours || {
         is24Hours: false,
         monday: { open: '09:00', close: '17:00', isOpen: true },
-        // ... other days
+        tuesday: { open: '09:00', close: '17:00', isOpen: true },
+        wednesday: { open: '09:00', close: '17:00', isOpen: true },
+        thursday: { open: '09:00', close: '17:00', isOpen: true },
+        friday: { open: '09:00', close: '17:00', isOpen: true },
+        saturday: { open: '09:00', close: '17:00', isOpen: true },
+        sunday: { open: '09:00', close: '17:00', isOpen: true }
       },
       isActive: service.isActive !== false
     });
   };
 
   const handleUpdate = async (e) => {
-  e.preventDefault();
-  try {
-    // Prepare the data in the exact format expected by the backend
-    const updateData = {
-  name: serviceForm.name,
-  type: serviceForm.type,
-  category: serviceForm.category,
-  description: serviceForm.description,
-  contact: serviceForm.contact,
-  location: {
-    type: 'Point', // Explicitly set the required type
-    coordinates: serviceForm.location.coordinates,
-    address: serviceForm.location.address
-  },
-  operatingHours: serviceForm.operatingHours,
-  isActive: serviceForm.isActive
-};
+    e.preventDefault();
+    try {
+      const updateData = {
+        name: serviceForm.name,
+        type: serviceForm.type,
+        category: serviceForm.category,
+        description: serviceForm.description,
+        contact: serviceForm.contact,
+        location: {
+          type: 'Point',
+          coordinates: serviceForm.location.coordinates,
+          address: serviceForm.location.address
+        },
+        operatingHours: serviceForm.operatingHours,
+        isActive: serviceForm.isActive
+      };
 
-    await updateMutation.mutateAsync(updateData);
-  } catch (error) {
-    console.error('Update error:', error);
-    toast.error(error.response?.data?.message || 'Failed to update service');
-  }
-};
+      await updateMutation.mutateAsync(updateData);
+    } catch (error) {
+      console.error('Update error:', error);
+      toast.error(error.response?.data?.message || 'Failed to update service');
+    }
+  };
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this service?')) {
@@ -226,7 +227,62 @@ const updateMutation = useMutation(
     }));
   };
 
-return (
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setServiceForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleContactChange = (e) => {
+    const { name, value } = e.target;
+    setServiceForm(prev => ({
+      ...prev,
+      contact: {
+        ...prev.contact,
+        [name]: value
+      }
+    }));
+  };
+
+  const handleAddressChange = (e) => {
+    const { name, value } = e.target;
+    setServiceForm(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        address: {
+          ...prev.location.address,
+          [name]: value
+        }
+      }
+    }));
+  };
+
+  const handleCoordinatesChange = (index, value) => {
+    const newCoordinates = [...serviceForm.location.coordinates];
+    newCoordinates[index] = parseFloat(value) || 0;
+    setServiceForm(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        coordinates: newCoordinates
+      }
+    }));
+  };
+
+  const handleOperatingHoursChange = (day, field, value) => {
+    setServiceForm(prev => ({
+      ...prev,
+      operatingHours: {
+        ...prev.operatingHours,
+        [day]: {
+          ...prev.operatingHours[day],
+          [field]: value
+        }
+      }
+    }));
+  };
+
+  return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header with improved styling */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -310,7 +366,6 @@ return (
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">Yes</td>
                           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">hospital</td>
                         </tr>
-                        {/* Add more rows as needed */}
                       </tbody>
                     </table>
                   </div>
@@ -375,8 +430,284 @@ return (
               <div key={service._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all hover:shadow-md">
                 {editingService === service._id ? (
                   <form onSubmit={handleUpdate} className="p-6">
-                    {/* Edit form remains functionally the same but with updated styling */}
-                    {/* ... */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Edit Service</h3>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service Name</label>
+                            <input
+                              type="text"
+                              name="name"
+                              value={serviceForm.name}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              required
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                            <select
+                              name="type"
+                              value={serviceForm.type}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              required
+                            >
+                              <option value="hospital">Hospital</option>
+                              <option value="police">Police Station</option>
+                              <option value="fire">Fire Station</option>
+                              <option value="ambulance">Ambulance Service</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                            <select
+                              name="category"
+                              value={serviceForm.category}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            >
+                              <option value="emergency">Emergency</option>
+                              <option value="general">General</option>
+                              <option value="specialized">Specialized</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                            <textarea
+                              name="description"
+                              value={serviceForm.description}
+                              onChange={handleInputChange}
+                              rows={3}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium mb-4 text-gray-700 dark:text-gray-300">Contact Information</h4>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                            <input
+                              type="text"
+                              name="phone"
+                              value={serviceForm.contact.phone}
+                              onChange={handleContactChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                            <input
+                              type="email"
+                              name="email"
+                              value={serviceForm.contact.email}
+                              onChange={handleContactChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Website</label>
+                            <input
+                              type="url"
+                              name="website"
+                              value={serviceForm.contact.website}
+                              onChange={handleContactChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                          </div>
+                        </div>
+                        
+                        <h4 className="font-medium mt-6 mb-4 text-gray-700 dark:text-gray-300">Location Details</h4>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Address</label>
+                            <input
+                              type="text"
+                              name="fullAddress"
+                              value={serviceForm.location.address.fullAddress}
+                              onChange={handleAddressChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            />
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Street</label>
+                              <input
+                                type="text"
+                                name="street"
+                                value={serviceForm.location.address.street}
+                                onChange={handleAddressChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
+                              <input
+                                type="text"
+                                name="city"
+                                value={serviceForm.location.address.city}
+                                onChange={handleAddressChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State</label>
+                              <input
+                                type="text"
+                                name="state"
+                                value={serviceForm.location.address.state}
+                                onChange={handleAddressChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pincode</label>
+                              <input
+                                type="text"
+                                name="pincode"
+                                value={serviceForm.location.address.pincode}
+                                onChange={handleAddressChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Latitude</label>
+                              <input
+                                type="number"
+                                step="any"
+                                value={serviceForm.location.coordinates[1]}
+                                onChange={(e) => handleCoordinatesChange(1, e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Longitude</label>
+                              <input
+                                type="number"
+                                step="any"
+                                value={serviceForm.location.coordinates[0]}
+                                onChange={(e) => handleCoordinatesChange(0, e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <h4 className="font-medium mt-6 mb-4 text-gray-700 dark:text-gray-300">Operating Hours</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="is24Hours"
+                          checked={serviceForm.operatingHours.is24Hours}
+                          onChange={handle24HoursToggle}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <label htmlFor="is24Hours" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                          24/7 Open
+                        </label>
+                      </div>
+                      
+                      {!serviceForm.operatingHours.is24Hours && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                          {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+                            <div key={day} className="border p-3 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="capitalize font-medium text-gray-700 dark:text-gray-300">{day}</span>
+                                <div className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={serviceForm.operatingHours[day].isOpen}
+                                    onChange={() => handleDayToggle(day)}
+                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                                  />
+                                </div>
+                              </div>
+                              
+                              {serviceForm.operatingHours[day].isOpen && (
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Open</label>
+                                    <input
+                                      type="time"
+                                      value={serviceForm.operatingHours[day].open}
+                                      onChange={(e) => handleOperatingHoursChange(day, 'open', e.target.value)}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Close</label>
+                                    <input
+                                      type="time"
+                                      value={serviceForm.operatingHours[day].close}
+                                      onChange={(e) => handleOperatingHoursChange(day, 'close', e.target.value)}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center mt-6">
+                      <input
+                        type="checkbox"
+                        id="isActive"
+                        checked={serviceForm.isActive}
+                        onChange={() => setServiceForm(prev => ({ ...prev, isActive: !prev.isActive }))}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                      />
+                      <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        Active Service
+                      </label>
+                    </div>
+                    
+                    <div className="flex justify-end gap-3 mt-8">
+                      <button
+                        type="button"
+                        onClick={() => setEditingService(null)}
+                        className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={updateMutation.isLoading}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70"
+                      >
+                        {updateMutation.isLoading ? (
+                          <span className="flex items-center">
+                            <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                            Updating...
+                          </span>
+                        ) : 'Update Service'}
+                      </button>
+                    </div>
                   </form>
                 ) : (
                   <div className="p-6">
