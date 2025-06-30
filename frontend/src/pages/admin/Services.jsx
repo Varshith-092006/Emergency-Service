@@ -105,19 +105,25 @@ const AdminServices = () => {
   );
 
   // Update service mutation
-  const updateMutation = useMutation(
-    (updatedService) => api.put(`/api/services/${editingService}`, updatedService),
-    {
-      onSuccess: () => {
-        toast.success('Service updated successfully');
-        setEditingService(null);
-        queryClient.invalidateQueries('admin-services');
-      },
-      onError: () => {
-        toast.error('Failed to update service');
-      }
+  // Update service mutation
+const updateMutation = useMutation(
+  (updatedService) => {
+    // Log the data being sent for debugging
+    console.log('Sending update:', updatedService);
+    return api.put(`/api/services/${editingService}`, updatedService);
+  },
+  {
+    onSuccess: () => {
+      toast.success('Service updated successfully');
+      setEditingService(null);
+      queryClient.invalidateQueries('admin-services');
+    },
+    onError: (error) => {
+      console.error('Update error details:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Failed to update service');
     }
-  );
+  }
+);
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -164,9 +170,26 @@ const AdminServices = () => {
   };
 
   const handleUpdate = async (e) => {
-    e.preventDefault();
-    await updateMutation.mutateAsync(serviceForm);
-  };
+  e.preventDefault();
+  try {
+    // Prepare the data in the exact format expected by the backend
+    const updateData = {
+      name: serviceForm.name,
+      type: serviceForm.type,
+      category: serviceForm.category,
+      description: serviceForm.description,
+      contact: serviceForm.contact,
+      location: serviceForm.location,
+      operatingHours: serviceForm.operatingHours,
+      isActive: serviceForm.isActive
+    };
+
+    await updateMutation.mutateAsync(updateData);
+  } catch (error) {
+    console.error('Update error:', error);
+    toast.error(error.response?.data?.message || 'Failed to update service');
+  }
+};
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this service?')) {

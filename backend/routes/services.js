@@ -157,15 +157,44 @@ router.get('/:id', optionalAuth, asyncHandler(async (req, res) => {
 
 // PUT /api/services/:id
 router.put('/:id', protect, requireAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  // Validate required fields
+  if (!req.body.name || !req.body.type || !req.body.location || !req.body.contact) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Missing required fields' 
+    });
+  }
+
   const updated = await EmergencyService.findByIdAndUpdate(
-    req.params.id,
-    req.body,
+    id,
+    {
+      $set: {
+        name: req.body.name,
+        type: req.body.type,
+        category: req.body.category || 'emergency',
+        description: req.body.description,
+        contact: req.body.contact,
+        location: req.body.location,
+        operatingHours: req.body.operatingHours,
+        isActive: req.body.isActive !== false
+      }
+    },
     { new: true, runValidators: true }
   );
+
   if (!updated) {
-    return res.status(404).json({ success: false, message: 'Service not found' });
+    return res.status(404).json({ 
+      success: false, 
+      message: 'Service not found' 
+    });
   }
-  res.json({ success: true, data: updated });
+
+  res.json({ 
+    success: true, 
+    data: updated 
+  });
 }));
 
 // DELETE /api/services/:id
