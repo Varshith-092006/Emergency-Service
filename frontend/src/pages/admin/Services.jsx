@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import api from '../../services/api';
 import { 
   Loader2, 
   Trash2, 
@@ -9,15 +11,222 @@ import {
   AlertTriangle,
   CheckCircle,
   MapPin,
-  Clock,
-  ChevronDown,
-  ChevronUp
+  Clock
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 const AdminServices = () => {
-  // ... (keep all existing state and functions exactly as they are)
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [showUpload, setShowUpload] = useState(false);
+  const [csvFile, setCsvFile] = useState(null);
+  const [showCsvFormat, setShowCsvFormat] = useState(false);
+  const [editingService, setEditingService] = useState(null);
+  const [serviceForm, setServiceForm] = useState({
+    name: '',
+    type: 'hospital',
+    category: 'emergency',
+    description: '',
+    contact: {
+      phone: '',
+      email: '',
+      website: ''
+    },
+    location: {
+      type: 'Point',
+      coordinates: [0, 0],
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        pincode: '',
+        country: 'India',
+        fullAddress: ''
+      }
+    },
+    operatingHours: {
+      is24Hours: false,
+      monday: { open: '09:00', close: '17:00', isOpen: true },
+      tuesday: { open: '09:00', close: '17:00', isOpen: true },
+      wednesday: { open: '09:00', close: '17:00', isOpen: true },
+      thursday: { open: '09:00', close: '17:00', isOpen: true },
+      friday: { open: '09:00', close: '17:00', isOpen: true },
+      saturday: { open: '09:00', close: '17:00', isOpen: true },
+      sunday: { open: '09:00', close: '17:00', isOpen: true }
+    },
+    isActive: true
+  });
 
-  return (
+  // Fetch services
+  const { data: services, isLoading, isError } = useQuery(
+    ['admin-services', search],
+    async () => {
+      const res = await api.get('/api/services', { 
+        params: { 
+          search,
+          limit: 100 
+        } 
+      });
+      return res.data.data.services;
+    }
+  );
+
+  // Bulk upload mutation
+  const uploadMutation = useMutation(
+    (formData) => api.post('/api/admin/services/bulk-upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }),
+    {
+      onSuccess: () => {
+        toast.success('Services uploaded successfully!');
+        queryClient.invalidateQueries('admin-services');
+        setShowUpload(false);
+        setCsvFile(null);
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to upload services');
+      }
+    }
+  );
+
+  // Delete service mutation
+  const deleteMutation = useMutation(
+    (id) => api.delete(`/api/services/${id}`),
+    {
+      onSuccess: () => {
+        toast.success('Service deleted successfully');
+        queryClient.invalidateQueries('admin-services');
+      },
+      onError: () => {
+        toast.error('Failed to delete service');
+      }
+    }
+  );
+
+  // Update service mutation
+  // Update service mutation
+const updateMutation = useMutation(
+  (updatedService) => {
+    // Log the data being sent for debugging
+    console.log('Sending update:', updatedService);
+    return api.put(`/api/services/${editingService}`, updatedService);
+  },
+  {
+    onSuccess: () => {
+      toast.success('Service updated successfully');
+      setEditingService(null);
+      queryClient.invalidateQueries('admin-services');
+    },
+    onError: (error) => {
+      console.error('Update error details:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Failed to update service');
+    }
+  }
+);
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!csvFile) {
+      toast.error('Please select a CSV file');
+      return;
+    }
+    
+    const formData = new FormData();
+    formData.append('csv', csvFile);
+    await uploadMutation.mutateAsync(formData);
+  };
+
+  const handleEdit = (service) => {
+    setEditingService(service._id);
+    setServiceForm({
+      name: service.name,
+      type: service.type,
+      category: service.category || 'emergency',
+      description: service.description,
+      contact: {
+        phone: service.contact?.phone || '',
+        email: service.contact?.email || '',
+        website: service.contact?.website || ''
+      },
+      location: {
+        type: service.location.type || 'Point',
+        coordinates: service.location.coordinates,
+        address: {
+          street: service.location.address?.street || '',
+          city: service.location.address?.city || '',
+          state: service.location.address?.state || '',
+          pincode: service.location.address?.pincode || '',
+          country: service.location.address?.country || 'India',
+          fullAddress: service.location.address?.fullAddress || ''
+        }
+      },
+      operatingHours: service.operatingHours || {
+        is24Hours: false,
+        monday: { open: '09:00', close: '17:00', isOpen: true },
+        // ... other days
+      },
+      isActive: service.isActive !== false
+    });
+  };
+
+  const handleUpdate = async (e) => {
+  e.preventDefault();
+  try {
+    // Prepare the data in the exact format expected by the backend
+    const updateData = {
+  name: serviceForm.name,
+  type: serviceForm.type,
+  category: serviceForm.category,
+  description: serviceForm.description,
+  contact: serviceForm.contact,
+  location: {
+    type: 'Point', // Explicitly set the required type
+    coordinates: serviceForm.location.coordinates,
+    address: serviceForm.location.address
+  },
+  operatingHours: serviceForm.operatingHours,
+  isActive: serviceForm.isActive
+};
+
+    await updateMutation.mutateAsync(updateData);
+  } catch (error) {
+    console.error('Update error:', error);
+    toast.error(error.response?.data?.message || 'Failed to update service');
+  }
+};
+
+  const handleDelete = (id) => {
+    if (window.confirm('Are you sure you want to delete this service?')) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const handleDayToggle = (day) => {
+    setServiceForm(prev => ({
+      ...prev,
+      operatingHours: {
+        ...prev.operatingHours,
+        [day]: {
+          ...prev.operatingHours[day],
+          isOpen: !prev.operatingHours[day].isOpen
+        }
+      }
+    }));
+  };
+
+  const handle24HoursToggle = () => {
+    setServiceForm(prev => ({
+      ...prev,
+      operatingHours: {
+        ...prev.operatingHours,
+        is24Hours: !prev.operatingHours.is24Hours
+      }
+    }));
+  };
+
+return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header with improved styling */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
