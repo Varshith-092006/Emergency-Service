@@ -59,19 +59,21 @@ const AdminDashboard = () => {
     { _id: 'ambulance', count: 7 }
   ];
 
-  // Pie Chart Data
+  // Pie Chart Data - ensure we have valid data
+  const pieChartData = serviceTypes && serviceTypes.length > 0 ? serviceTypes : fallbackServiceTypes;
+  
   const serviceTypeData = {
-    labels: (serviceTypes.length ? serviceTypes : fallbackServiceTypes).map((t) => t._id.toUpperCase()),
+    labels: pieChartData.map((t) => t._id.toUpperCase()),
     datasets: [{
       label: 'Service Types',
-      data: (serviceTypes.length ? serviceTypes : fallbackServiceTypes).map((t) => t.count),
+      data: pieChartData.map((t) => t.count),
       backgroundColor: [
-        'rgba(59, 130, 246, 0.7)',  // blue
-        'rgba(239, 68, 68, 0.7)',   // red
-        'rgba(34, 197, 94, 0.7)',   // green
-        'rgba(245, 158, 11, 0.7)',  // yellow
-        'rgba(139, 92, 246, 0.7)',  // purple
-        'rgba(100, 116, 139, 0.7)', // slate
+        'rgba(59, 130, 246, 0.7)',
+        'rgba(239, 68, 68, 0.7)',
+        'rgba(34, 197, 94, 0.7)',
+        'rgba(245, 158, 11, 0.7)',
+        'rgba(139, 92, 246, 0.7)',
+        'rgba(100, 116, 139, 0.7)',
       ],
       borderColor: [
         'rgba(59, 130, 246, 1)',
