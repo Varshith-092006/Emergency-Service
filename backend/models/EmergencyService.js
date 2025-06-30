@@ -55,12 +55,30 @@ const emergencyServiceSchema = new mongoose.Schema({
     coordinates: {
       type: [Number],
       required: [true, 'Please provide coordinates'],
+      validate: {
+        validator: function(coords) {
+          return coords.length === 2 && 
+                 !isNaN(coords[0]) && 
+                 !isNaN(coords[1]) &&
+                 coords[0] >= -180 && coords[0] <= 180 &&
+                 coords[1] >= -90 && coords[1] <= 90;
+        },
+        message: 'Invalid coordinates provided'
+      },
       index: '2dsphere'
     },
     address: {
       street: String,
-      city: String,
-      state: String,
+      city: {
+        type: String,
+        required: true,
+        index: true
+      },
+      state: {
+        type: String,
+        required: true,
+        index: true
+      },
       pincode: String,
       country: {
         type: String,
@@ -70,62 +88,13 @@ const emergencyServiceSchema = new mongoose.Schema({
     }
   },
   operatingHours: {
-    monday: {
-      open: String,
-      close: String,
-      isOpen: {
-        type: Boolean,
-        default: true
-      }
-    },
-    tuesday: {
-      open: String,
-      close: String,
-      isOpen: {
-        type: Boolean,
-        default: true
-      }
-    },
-    wednesday: {
-      open: String,
-      close: String,
-      isOpen: {
-        type: Boolean,
-        default: true
-      }
-    },
-    thursday: {
-      open: String,
-      close: String,
-      isOpen: {
-        type: Boolean,
-        default: true
-      }
-    },
-    friday: {
-      open: String,
-      close: String,
-      isOpen: {
-        type: Boolean,
-        default: true
-      }
-    },
-    saturday: {
-      open: String,
-      close: String,
-      isOpen: {
-        type: Boolean,
-        default: true
-      }
-    },
-    sunday: {
-      open: String,
-      close: String,
-      isOpen: {
-        type: Boolean,
-        default: true
-      }
-    },
+    monday: { open: String, close: String, isOpen: Boolean },
+    tuesday: { open: String, close: String, isOpen: Boolean },
+    wednesday: { open: String, close: String, isOpen: Boolean },
+    thursday: { open: String, close: String, isOpen: Boolean },
+    friday: { open: String, close: String, isOpen: Boolean },
+    saturday: { open: String, close: String, isOpen: Boolean },
+    sunday: { open: String, close: String, isOpen: Boolean },
     is24Hours: {
       type: Boolean,
       default: false
@@ -134,10 +103,7 @@ const emergencyServiceSchema = new mongoose.Schema({
   services: [{
     name: String,
     description: String,
-    isAvailable: {
-      type: Boolean,
-      default: true
-    }
+    isAvailable: Boolean
   }],
   capacity: {
     totalBeds: Number,
@@ -160,10 +126,7 @@ const emergencyServiceSchema = new mongoose.Schema({
   images: [{
     url: String,
     caption: String,
-    isPrimary: {
-      type: Boolean,
-      default: false
-    }
+    isPrimary: Boolean
   }],
   isActive: {
     type: Boolean,
@@ -179,10 +142,7 @@ const emergencyServiceSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  lastUpdated: {
-    type: Date,
-    default: Date.now
-  },
+  lastUpdated: Date,
   tags: [String]
 }, {
   timestamps: true,
@@ -190,92 +150,88 @@ const emergencyServiceSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes for efficient queries
-// emergencyServiceSchema.index({ 'location.coordinates': '2dsphere' });
-emergencyServiceSchema.index({ type: 1, isActive: 1 });
+// Indexes
+emergencyServiceSchema.index({ 'location.coordinates': '2dsphere' });
+emergencyServiceSchema.index({ type: 1, category: 1, isActive: 1 });
+emergencyServiceSchema.index({ name: 'text', description: 'text' });
 emergencyServiceSchema.index({ 'location.address.city': 1, 'location.address.state': 1 });
-emergencyServiceSchema.index({ tags: 1 });
 
-// Virtual for distance calculation
+// Virtuals
 emergencyServiceSchema.virtual('distance').get(function() {
   return this._distance;
 });
 
-// Method to calculate distance from a point
-emergencyServiceSchema.methods.calculateDistance = function(lat, lng) {
-  const R = 6371; // Earth's radius in kilometers
-  const lat1 = this.location.coordinates[1];
-  const lon1 = this.location.coordinates[0];
-  const lat2 = lat;
-  const lon2 = lng;
+emergencyServiceSchema.virtual('isOpenNow').get(function() {
+  if (this.operatingHours?.is24Hours) return true;
   
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const now = new Date();
+  const day = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
+  const currentTime = now.toTimeString().substring(0, 5);
   
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const distance = R * c;
-  
-  this._distance = distance;
-  return distance;
-};
+  const hours = this.operatingHours?.[day];
+  return hours?.isOpen && currentTime >= hours.open && currentTime <= hours.close;
+});
 
-// Static method to find services near a location
-emergencyServiceSchema.statics.findNearby = function(lat, lng, maxDistance = 10, type = null) {
+// Static Methods
+emergencyServiceSchema.statics.findNearby = async function(coordinates, options = {}) {
   const query = {
     'location.coordinates': {
-      $near: {
+      $nearSphere: {
         $geometry: {
           type: 'Point',
-          coordinates: [lng, lat]
+          coordinates: coordinates
         },
-        $maxDistance: maxDistance * 1000 // Convert to meters
+        $maxDistance: options.maxDistance * 1000
       }
     },
     isActive: true
   };
-  
-  if (type) {
-    query.type = type;
-  }
-  
-  return this.find(query)
+
+  if (options.type) query.type = options.type;
+  if (options.category) query.category = options.category;
+
+  let services = await this.find(query)
+    .select('name type category contact location operatingHours ratings isActive')
+    .limit(options.limit)
+    .maxTimeMS(30000)
     .populate('addedBy', 'name email')
-    .sort({ 'location.coordinates': 1 });
+    .lean();
+
+  if (options.isOpenNow) {
+    const now = new Date();
+    const day = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
+    const currentTime = now.toTimeString().substring(0, 5);
+    
+    services = services.filter(service => {
+      if (service.operatingHours?.is24Hours) return true;
+      const hours = service.operatingHours?.[day];
+      return hours?.isOpen && currentTime >= hours.open && currentTime <= hours.close;
+    });
+  }
+
+  return services;
 };
 
-// Static method to find services by type and location
-emergencyServiceSchema.statics.findByTypeAndLocation = function(type, lat, lng, maxDistance = 10) {
-  return this.findNearby(lat, lng, maxDistance, type);
+// Methods
+emergencyServiceSchema.methods.updateRating = async function(newRating) {
+  this.ratings.average = ((this.ratings.average * this.ratings.count) + newRating) / (this.ratings.count + 1);
+  this.ratings.count += 1;
+  return this.save();
 };
 
-// Pre-save middleware to update lastUpdated
+// Hooks
 emergencyServiceSchema.pre('save', function(next) {
   this.lastUpdated = new Date();
+  
+  // Ensure coordinates are in [longitude, latitude] order
+  if (this.location.coordinates && this.location.coordinates.length === 2) {
+    this.location.coordinates = [
+      parseFloat(this.location.coordinates[0]),
+      parseFloat(this.location.coordinates[1])
+    ];
+  }
+  
   next();
 });
-
-// Method to update capacity
-emergencyServiceSchema.methods.updateCapacity = function(capacityData) {
-  this.capacity = { ...this.capacity, ...capacityData };
-  return this.save();
-};
-
-// Method to add service
-emergencyServiceSchema.methods.addService = function(serviceData) {
-  this.services.push(serviceData);
-  return this.save();
-};
-
-// Method to update rating
-emergencyServiceSchema.methods.updateRating = function(newRating) {
-  const totalRating = this.ratings.average * this.ratings.count + newRating;
-  this.ratings.count += 1;
-  this.ratings.average = totalRating / this.ratings.count;
-  return this.save();
-};
 
 module.exports = mongoose.model('EmergencyService', emergencyServiceSchema);
