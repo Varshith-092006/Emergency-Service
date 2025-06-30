@@ -33,6 +33,7 @@ const AdminServices = () => {
       website: ''
     },
     location: {
+      type: 'Point',
       coordinates: [0, 0],
       address: {
         street: '',
@@ -150,6 +151,7 @@ const updateMutation = useMutation(
         website: service.contact?.website || ''
       },
       location: {
+        type: service.location.type || 'Point',
         coordinates: service.location.coordinates,
         address: {
           street: service.location.address?.street || '',
@@ -174,15 +176,19 @@ const updateMutation = useMutation(
   try {
     // Prepare the data in the exact format expected by the backend
     const updateData = {
-      name: serviceForm.name,
-      type: serviceForm.type,
-      category: serviceForm.category,
-      description: serviceForm.description,
-      contact: serviceForm.contact,
-      location: serviceForm.location,
-      operatingHours: serviceForm.operatingHours,
-      isActive: serviceForm.isActive
-    };
+  name: serviceForm.name,
+  type: serviceForm.type,
+  category: serviceForm.category,
+  description: serviceForm.description,
+  contact: serviceForm.contact,
+  location: {
+    type: 'Point', // Explicitly set the required type
+    coordinates: serviceForm.location.coordinates,
+    address: serviceForm.location.address
+  },
+  operatingHours: serviceForm.operatingHours,
+  isActive: serviceForm.isActive
+};
 
     await updateMutation.mutateAsync(updateData);
   } catch (error) {
