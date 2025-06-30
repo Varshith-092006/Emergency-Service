@@ -106,22 +106,25 @@ const AdminServices = () => {
   );
 
   // Update service mutation
-  const updateMutation = useMutation(
-    (updatedService) => {
-      return api.put(`/api/services/${editingService}`, updatedService);
+  // Update service mutation
+const updateMutation = useMutation(
+  (updatedService) => {
+    // Log the data being sent for debugging
+    console.log('Sending update:', updatedService);
+    return api.put(`/api/services/${editingService}`, updatedService);
+  },
+  {
+    onSuccess: () => {
+      toast.success('Service updated successfully');
+      setEditingService(null);
+      queryClient.invalidateQueries('admin-services');
     },
-    {
-      onSuccess: () => {
-        toast.success('Service updated successfully');
-        setEditingService(null);
-        queryClient.invalidateQueries('admin-services');
-      },
-      onError: (error) => {
-        console.error('Update error details:', error.response?.data);
-        toast.error(error.response?.data?.message || 'Failed to update service');
-      }
+    onError: (error) => {
+      console.error('Update error details:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Failed to update service');
     }
-  );
+  }
+);
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -162,41 +165,37 @@ const AdminServices = () => {
       operatingHours: service.operatingHours || {
         is24Hours: false,
         monday: { open: '09:00', close: '17:00', isOpen: true },
-        tuesday: { open: '09:00', close: '17:00', isOpen: true },
-        wednesday: { open: '09:00', close: '17:00', isOpen: true },
-        thursday: { open: '09:00', close: '17:00', isOpen: true },
-        friday: { open: '09:00', close: '17:00', isOpen: true },
-        saturday: { open: '09:00', close: '17:00', isOpen: true },
-        sunday: { open: '09:00', close: '17:00', isOpen: true }
+        // ... other days
       },
       isActive: service.isActive !== false
     });
   };
 
   const handleUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      const updateData = {
-        name: serviceForm.name,
-        type: serviceForm.type,
-        category: serviceForm.category,
-        description: serviceForm.description,
-        contact: serviceForm.contact,
-        location: {
-          type: 'Point',
-          coordinates: serviceForm.location.coordinates,
-          address: serviceForm.location.address
-        },
-        operatingHours: serviceForm.operatingHours,
-        isActive: serviceForm.isActive
-      };
+  e.preventDefault();
+  try {
+    // Prepare the data in the exact format expected by the backend
+    const updateData = {
+  name: serviceForm.name,
+  type: serviceForm.type,
+  category: serviceForm.category,
+  description: serviceForm.description,
+  contact: serviceForm.contact,
+  location: {
+    type: 'Point', // Explicitly set the required type
+    coordinates: serviceForm.location.coordinates,
+    address: serviceForm.location.address
+  },
+  operatingHours: serviceForm.operatingHours,
+  isActive: serviceForm.isActive
+};
 
-      await updateMutation.mutateAsync(updateData);
-    } catch (error) {
-      console.error('Update error:', error);
-      toast.error(error.response?.data?.message || 'Failed to update service');
-    }
-  };
+    await updateMutation.mutateAsync(updateData);
+  } catch (error) {
+    console.error('Update error:', error);
+    toast.error(error.response?.data?.message || 'Failed to update service');
+  }
+};
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this service?')) {
@@ -227,181 +226,119 @@ const AdminServices = () => {
     }));
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setServiceForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleContactChange = (e) => {
-    const { name, value } = e.target;
-    setServiceForm(prev => ({
-      ...prev,
-      contact: {
-        ...prev.contact,
-        [name]: value
-      }
-    }));
-  };
-
-  const handleAddressChange = (e) => {
-    const { name, value } = e.target;
-    setServiceForm(prev => ({
-      ...prev,
-      location: {
-        ...prev.location,
-        address: {
-          ...prev.location.address,
-          [name]: value
-        }
-      }
-    }));
-  };
-
-  const handleCoordinatesChange = (index, value) => {
-    const newCoordinates = [...serviceForm.location.coordinates];
-    newCoordinates[index] = parseFloat(value) || 0;
-    setServiceForm(prev => ({
-      ...prev,
-      location: {
-        ...prev.location,
-        coordinates: newCoordinates
-      }
-    }));
-  };
-
-  const handleOperatingHoursChange = (day, field, value) => {
-    setServiceForm(prev => ({
-      ...prev,
-      operatingHours: {
-        ...prev.operatingHours,
-        [day]: {
-          ...prev.operatingHours[day],
-          [field]: value
-        }
-      }
-    }));
-  };
-
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header with improved styling */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Emergency Services Management</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Manage hospitals, police stations, and emergency services
-          </p>
-        </div>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Manage Emergency Services</h1>
         <button 
           onClick={() => setShowUpload(!showUpload)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          className="btn btn-primary"
         >
           {showUpload ? (
             <>
               <X className="w-5 h-5" />
-              <span>Cancel Upload</span>
+              Cancel Upload
             </>
           ) : (
             <>
               <Upload className="w-5 h-5" />
-              <span>Bulk Upload</span>
+              Bulk Upload
             </>
           )}
         </button>
       </div>
 
-      {/* Search and Upload Section */}
-      <div className="mb-8 space-y-4">
-        <div className="relative max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-            <Search className="w-5 h-5" />
+      <div className="mb-6">
+        <div className="relative max-w-md mb-4">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
           </div>
           <input
             type="text"
-            placeholder="Search services by name, type, or location..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            placeholder="Search services..."
+            className="input input-bordered pl-10 w-full"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
         {showUpload && (
-          <form onSubmit={handleUpload} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Bulk Upload Services</h3>
-            
+          <form onSubmit={handleUpload} className="bg-white p-4 rounded-lg shadow mb-6">
             <div className="mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  CSV File Upload
-                </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Upload CSV File
                 <button 
                   type="button" 
                   onClick={() => setShowCsvFormat(!showCsvFormat)}
-                  className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                  className="ml-2 text-blue-600 text-xs"
                 >
                   {showCsvFormat ? 'Hide format' : 'Show required format'}
                 </button>
-              </div>
+              </label>
               
               {showCsvFormat && (
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-4 text-sm border border-gray-200 dark:border-gray-600">
-                  <h4 className="font-medium mb-3 text-gray-800 dark:text-white">Required CSV Format</h4>
+                <div className="bg-gray-50 p-3 rounded mb-3 text-sm">
+                  <p className="font-medium mb-1">CSV should include these columns:</p>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                      <thead className="bg-gray-100 dark:bg-gray-600">
+                    <table className="table table-zebra">
+                      <thead>
                         <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Column</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Required</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Example</th>
+                          <th>Column</th>
+                          <th>Required</th>
+                          <th>Example</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      <tbody>
                         <tr>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">name</td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">Yes</td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">City General Hospital</td>
+                          <td>name</td>
+                          <td>Yes</td>
+                          <td>City General Hospital</td>
                         </tr>
                         <tr>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">type</td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">Yes</td>
-                          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">hospital</td>
+                          <td>type</td>
+                          <td>Yes</td>
+                          <td>hospital</td>
                         </tr>
+                        <tr>
+                          <td>phone</td>
+                          <td>Yes</td>
+                          <td>+911234567890</td>
+                        </tr>
+                        <tr>
+                          <td>longitude</td>
+                          <td>Yes</td>
+                          <td>77.2090</td>
+                        </tr>
+                        <tr>
+                          <td>latitude</td>
+                          <td>Yes</td>
+                          <td>28.6139</td>
+                        </tr>
+                        {/* Add more rows for other fields */}
                       </tbody>
                     </table>
                   </div>
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="block">
-                    <span className="sr-only">Choose CSV file</span>
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={(e) => setCsvFile(e.target.files[0])}
-                      className="block w-full text-sm text-gray-500
-                        file:mr-4 file:py-2 file:px-4
-                        file:rounded-md file:border-0
-                        file:text-sm file:font-semibold
-                        file:bg-blue-50 file:text-blue-700
-                        hover:file:bg-blue-100
-                        dark:file:bg-gray-700 dark:file:text-blue-300
-                        dark:hover:file:bg-gray-600"
-                    />
-                  </label>
-                </div>
+              <div className="flex items-center gap-4">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => setCsvFile(e.target.files[0])}
+                  className="file-input file-input-bordered w-full"
+                />
                 <button
                   type="submit"
                   disabled={uploadMutation.isLoading}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-70"
+                  className="btn btn-success"
                 >
                   {uploadMutation.isLoading ? (
                     <Loader2 className="animate-spin w-5 h-5" />
                   ) : (
                     <Upload className="w-5 h-5" />
                   )}
-                  <span>Upload CSV</span>
+                  Upload
                 </button>
               </div>
             </div>
@@ -409,345 +346,386 @@ const AdminServices = () => {
         )}
       </div>
 
-      {/* Services List */}
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <Loader2 className="animate-spin w-10 h-10 text-blue-600 dark:text-blue-400" />
+          <Loader2 className="animate-spin w-10 h-10 text-blue-600" />
         </div>
       ) : isError ? (
-        <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800 flex items-center gap-2">
+        <div className="alert alert-error">
           <AlertTriangle className="w-5 h-5" />
           <span>Failed to load services. Please try again.</span>
         </div>
       ) : (
         <div className="space-y-4">
           {services?.length === 0 ? (
-            <div className="p-4 mb-4 text-sm text-blue-700 bg-blue-100 rounded-lg dark:bg-blue-200 dark:text-blue-800 flex items-center gap-2">
-              <span>No services found matching your search criteria</span>
+            <div className="alert alert-info">
+              <span>No services found</span>
             </div>
           ) : (
             services?.map((service) => (
-              <div key={service._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all hover:shadow-md">
+              <div key={service._id} className="bg-white rounded-lg shadow overflow-hidden">
                 {editingService === service._id ? (
-                  <form onSubmit={handleUpdate} className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Edit Service</h3>
-                        
-                        <div className="space-y-4">
+                  <form onSubmit={handleUpdate} className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      {/* Basic Info */}
+                      <div className="md:col-span-2">
+                        <h3 className="text-lg font-semibold mb-2">Basic Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service Name</label>
+                            <label className="form-label">Name*</label>
                             <input
                               type="text"
-                              name="name"
+                              className="input input-bordered w-full"
                               value={serviceForm.name}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              onChange={(e) => setServiceForm({...serviceForm, name: e.target.value})}
                               required
                             />
                           </div>
-                          
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                            <label className="form-label">Type*</label>
                             <select
-                              name="type"
+                              className="select select-bordered w-full"
                               value={serviceForm.type}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              onChange={(e) => setServiceForm({...serviceForm, type: e.target.value})}
                               required
                             >
                               <option value="hospital">Hospital</option>
                               <option value="police">Police Station</option>
+                              <option value="ambulance">Ambulance</option>
                               <option value="fire">Fire Station</option>
-                              <option value="ambulance">Ambulance Service</option>
+                              <option value="pharmacy">Pharmacy</option>
+                              <option value="veterinary">Veterinary</option>
+                              <option value="other">Other</option>
                             </select>
                           </div>
-                          
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                            <label className="form-label">Category*</label>
                             <select
-                              name="category"
+                              className="select select-bordered w-full"
                               value={serviceForm.category}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              onChange={(e) => setServiceForm({...serviceForm, category: e.target.value})}
+                              required
                             >
                               <option value="emergency">Emergency</option>
-                              <option value="general">General</option>
-                              <option value="specialized">Specialized</option>
+                              <option value="urgent">Urgent</option>
+                              <option value="routine">Routine</option>
                             </select>
                           </div>
-                          
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                            <textarea
-                              name="description"
-                              value={serviceForm.description}
-                              onChange={handleInputChange}
-                              rows={3}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            />
+                            <label className="form-label">Status</label>
+                            <select
+                              className="select select-bordered w-full"
+                              value={serviceForm.isActive}
+                              onChange={(e) => setServiceForm({...serviceForm, isActive: e.target.value === 'true'})}
+                            >
+                              <option value={true}>Active</option>
+                              <option value={false}>Inactive</option>
+                            </select>
                           </div>
                         </div>
                       </div>
-                      
-                      <div>
-                        <h4 className="font-medium mb-4 text-gray-700 dark:text-gray-300">Contact Information</h4>
-                        <div className="space-y-4">
+
+                      {/* Contact Info */}
+                      <div className="md:col-span-2">
+                        <h3 className="text-lg font-semibold mb-2">Contact Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                            <label className="form-label">Phone*</label>
                             <input
-                              type="text"
-                              name="phone"
+                              type="tel"
+                              className="input input-bordered w-full"
                               value={serviceForm.contact.phone}
-                              onChange={handleContactChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              onChange={(e) => setServiceForm({
+                                ...serviceForm,
+                                contact: {...serviceForm.contact, phone: e.target.value}
+                              })}
+                              required
                             />
                           </div>
-                          
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                            <label className="form-label">Email</label>
                             <input
                               type="email"
-                              name="email"
+                              className="input input-bordered w-full"
                               value={serviceForm.contact.email}
-                              onChange={handleContactChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              onChange={(e) => setServiceForm({
+                                ...serviceForm,
+                                contact: {...serviceForm.contact, email: e.target.value}
+                              })}
                             />
                           </div>
-                          
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Website</label>
+                            <label className="form-label">Website</label>
                             <input
                               type="url"
-                              name="website"
+                              className="input input-bordered w-full"
                               value={serviceForm.contact.website}
-                              onChange={handleContactChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              onChange={(e) => setServiceForm({
+                                ...serviceForm,
+                                contact: {...serviceForm.contact, website: e.target.value}
+                              })}
                             />
                           </div>
                         </div>
-                        
-                        <h4 className="font-medium mt-6 mb-4 text-gray-700 dark:text-gray-300">Location Details</h4>
-                        <div className="space-y-4">
+                      </div>
+
+                      {/* Location Info */}
+                      <div className="md:col-span-2">
+                        <h3 className="text-lg font-semibold mb-2">Location</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Address</label>
+                            <label className="form-label">Longitude*</label>
+                            <input
+                              type="number"
+                              step="any"
+                              className="input input-bordered w-full"
+                              value={serviceForm.location.coordinates[0]}
+                              onChange={(e) => setServiceForm({
+                                ...serviceForm,
+                                location: {
+                                  ...serviceForm.location,
+                                  coordinates: [
+                                    parseFloat(e.target.value || 0),
+                                    serviceForm.location.coordinates[1]
+                                  ]
+                                }
+                              })}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="form-label">Latitude*</label>
+                            <input
+                              type="number"
+                              step="any"
+                              className="input input-bordered w-full"
+                              value={serviceForm.location.coordinates[1]}
+                              onChange={(e) => setServiceForm({
+                                ...serviceForm,
+                                location: {
+                                  ...serviceForm.location,
+                                  coordinates: [
+                                    serviceForm.location.coordinates[0],
+                                    parseFloat(e.target.value || 0)
+                                  ]
+                                }
+                              })}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <div>
+                            <label className="form-label">Street</label>
                             <input
                               type="text"
-                              name="fullAddress"
-                              value={serviceForm.location.address.fullAddress}
-                              onChange={handleAddressChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                              className="input input-bordered w-full"
+                              value={serviceForm.location.address.street}
+                              onChange={(e) => setServiceForm({
+                                ...serviceForm,
+                                location: {
+                                  ...serviceForm.location,
+                                  address: {
+                                    ...serviceForm.location.address,
+                                    street: e.target.value
+                                  }
+                                }
+                              })}
                             />
                           </div>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Street</label>
-                              <input
-                                type="text"
-                                name="street"
-                                value={serviceForm.location.address.street}
-                                onChange={handleAddressChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
-                              <input
-                                type="text"
-                                name="city"
-                                value={serviceForm.location.address.city}
-                                onChange={handleAddressChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                              />
-                            </div>
+                          <div>
+                            <label className="form-label">City*</label>
+                            <input
+                              type="text"
+                              className="input input-bordered w-full"
+                              value={serviceForm.location.address.city}
+                              onChange={(e) => setServiceForm({
+                                ...serviceForm,
+                                location: {
+                                  ...serviceForm.location,
+                                  address: {
+                                    ...serviceForm.location.address,
+                                    city: e.target.value
+                                  }
+                                }
+                              })}
+                              required
+                            />
                           </div>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State</label>
-                              <input
-                                type="text"
-                                name="state"
-                                value={serviceForm.location.address.state}
-                                onChange={handleAddressChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pincode</label>
-                              <input
-                                type="text"
-                                name="pincode"
-                                value={serviceForm.location.address.pincode}
-                                onChange={handleAddressChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                              />
-                            </div>
+                          <div>
+                            <label className="form-label">State*</label>
+                            <input
+                              type="text"
+                              className="input input-bordered w-full"
+                              value={serviceForm.location.address.state}
+                              onChange={(e) => setServiceForm({
+                                ...serviceForm,
+                                location: {
+                                  ...serviceForm.location,
+                                  address: {
+                                    ...serviceForm.location.address,
+                                    state: e.target.value
+                                  }
+                                }
+                              })}
+                              required
+                            />
                           </div>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Latitude</label>
-                              <input
-                                type="number"
-                                step="any"
-                                value={serviceForm.location.coordinates[1]}
-                                onChange={(e) => handleCoordinatesChange(1, e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Longitude</label>
-                              <input
-                                type="number"
-                                step="any"
-                                value={serviceForm.location.coordinates[0]}
-                                onChange={(e) => handleCoordinatesChange(0, e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                              />
-                            </div>
+                          <div>
+                            <label className="form-label">Pincode</label>
+                            <input
+                              type="text"
+                              className="input input-bordered w-full"
+                              value={serviceForm.location.address.pincode}
+                              onChange={(e) => setServiceForm({
+                                ...serviceForm,
+                                location: {
+                                  ...serviceForm.location,
+                                  address: {
+                                    ...serviceForm.location.address,
+                                    pincode: e.target.value
+                                  }
+                                }
+                              })}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="form-label">Full Address*</label>
+                            <textarea
+                              className="textarea textarea-bordered w-full"
+                              value={serviceForm.location.address.fullAddress}
+                              onChange={(e) => setServiceForm({
+                                ...serviceForm,
+                                location: {
+                                  ...serviceForm.location,
+                                  address: {
+                                    ...serviceForm.location.address,
+                                    fullAddress: e.target.value
+                                  }
+                                }
+                              })}
+                              required
+                            />
                           </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    <h4 className="font-medium mt-6 mb-4 text-gray-700 dark:text-gray-300">Operating Hours</h4>
-                    <div className="space-y-4">
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id="is24Hours"
-                          checked={serviceForm.operatingHours.is24Hours}
-                          onChange={handle24HoursToggle}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                        />
-                        <label htmlFor="is24Hours" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                          24/7 Open
-                        </label>
-                      </div>
-                      
-                      {!serviceForm.operatingHours.is24Hours && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                          {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
-                            <div key={day} className="border p-3 rounded-lg">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="capitalize font-medium text-gray-700 dark:text-gray-300">{day}</span>
-                                <div className="flex items-center">
+
+                      {/* Operating Hours */}
+                      <div className="md:col-span-2">
+                        <h3 className="text-lg font-semibold mb-2">Operating Hours</h3>
+                        <div className="flex items-center gap-2 mb-4">
+                          <input
+                            type="checkbox"
+                            checked={serviceForm.operatingHours.is24Hours}
+                            onChange={handle24HoursToggle}
+                            className="checkbox checkbox-primary"
+                          />
+                          <span>Open 24 Hours</span>
+                        </div>
+                        
+                        {!serviceForm.operatingHours.is24Hours && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+                              <div key={day} className="border rounded-lg p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="capitalize font-medium">{day}</span>
                                   <input
                                     type="checkbox"
-                                    checked={serviceForm.operatingHours[day].isOpen}
+                                    checked={serviceForm.operatingHours[day]?.isOpen}
                                     onChange={() => handleDayToggle(day)}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+                                    className="toggle toggle-primary"
                                   />
                                 </div>
-                              </div>
-                              
-                              {serviceForm.operatingHours[day].isOpen && (
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Open</label>
+                                {serviceForm.operatingHours[day]?.isOpen && (
+                                  <div className="flex items-center gap-2">
                                     <input
                                       type="time"
+                                      className="input input-bordered w-full"
                                       value={serviceForm.operatingHours[day].open}
-                                      onChange={(e) => handleOperatingHoursChange(day, 'open', e.target.value)}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                      onChange={(e) => setServiceForm(prev => ({
+                                        ...prev,
+                                        operatingHours: {
+                                          ...prev.operatingHours,
+                                          [day]: {
+                                            ...prev.operatingHours[day],
+                                            open: e.target.value
+                                          }
+                                        }
+                                      }))}
                                     />
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Close</label>
+                                    <span>to</span>
                                     <input
                                       type="time"
+                                      className="input input-bordered w-full"
                                       value={serviceForm.operatingHours[day].close}
-                                      onChange={(e) => handleOperatingHoursChange(day, 'close', e.target.value)}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                      onChange={(e) => setServiceForm(prev => ({
+                                        ...prev,
+                                        operatingHours: {
+                                          ...prev.operatingHours,
+                                          [day]: {
+                                            ...prev.operatingHours[day],
+                                            close: e.target.value
+                                          }
+                                        }
+                                      }))}
                                     />
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    
-                    <div className="flex items-center mt-6">
-                      <input
-                        type="checkbox"
-                        id="isActive"
-                        checked={serviceForm.isActive}
-                        onChange={() => setServiceForm(prev => ({ ...prev, isActive: !prev.isActive }))}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
-                      />
-                      <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                        Active Service
-                      </label>
-                    </div>
-                    
-                    <div className="flex justify-end gap-3 mt-8">
+
+                    <div className="flex justify-end gap-2">
                       <button
                         type="button"
                         onClick={() => setEditingService(null)}
-                        className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+                        className="btn btn-ghost"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
+                        className="btn btn-primary"
                         disabled={updateMutation.isLoading}
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70"
                       >
                         {updateMutation.isLoading ? (
-                          <span className="flex items-center">
-                            <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                            Updating...
-                          </span>
-                        ) : 'Update Service'}
+                          <Loader2 className="animate-spin w-5 h-5" />
+                        ) : 'Save Changes'}
                       </button>
                     </div>
                   </form>
                 ) : (
-                  <div className="p-6">
+                  <div className="p-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{service.name}</h3>
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200">
-                            {service.type}
-                          </span>
-                          <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full dark:bg-purple-900 dark:text-purple-200">
-                            {service.category}
-                          </span>
+                        <h3 className="text-lg font-semibold">{service.name}</h3>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <span className="badge badge-primary capitalize">{service.type}</span>
+                          <span className="badge badge-secondary capitalize">{service.category}</span>
                           {service.isActive ? (
-                            <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full dark:bg-green-900 dark:text-green-200">
-                              Active
-                            </span>
+                            <span className="badge badge-success">Active</span>
                           ) : (
-                            <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full dark:bg-red-900 dark:text-red-200">
-                              Inactive
-                            </span>
+                            <span className="badge badge-error">Inactive</span>
                           )}
                           {service.isVerified && (
-                            <span className="px-2 py-1 text-xs font-medium bg-cyan-100 text-cyan-800 rounded-full dark:bg-cyan-900 dark:text-cyan-200">
-                              Verified
-                            </span>
+                            <span className="badge badge-info">Verified</span>
                           )}
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(service)}
-                          className="p-2 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="btn btn-sm btn-square btn-ghost"
                           title="Edit service"
                         >
                           <Edit className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleDelete(service._id)}
-                          className="p-2 text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="btn btn-sm btn-square btn-ghost text-error"
                           title="Delete service"
                           disabled={deleteMutation.isLoading}
                         >
@@ -760,40 +738,37 @@ const AdminServices = () => {
                       </div>
                     </div>
 
-                    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <h4 className="font-medium mb-3 flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                          <MapPin className="w-5 h-5 text-blue-500" />
-                          Location Details
+                        <h4 className="font-medium mb-2 flex items-center gap-2">
+                          <MapPin className="w-5 h-5 text-gray-500" />
+                          Location
                         </h4>
-                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                          <p className="font-medium text-gray-800 dark:text-gray-200">{service.location.address.fullAddress}</p>
-                          <p>{service.location.address.city}, {service.location.address.state}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-500">
-                            Coordinates: {service.location.coordinates[1].toFixed(4)}, {service.location.coordinates[0].toFixed(4)}
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p>{service.location.address.fullAddress}</p>
+                          <p>
+                            {service.location.address.city}, {service.location.address.state}
                           </p>
+                          <p>Coordinates: {service.location.coordinates[1].toFixed(4)}, {service.location.coordinates[0].toFixed(4)}</p>
                         </div>
                       </div>
 
                       <div>
-                        <h4 className="font-medium mb-3 flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                          <Clock className="w-5 h-5 text-blue-500" />
+                        <h4 className="font-medium mb-2 flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-gray-500" />
                           Operating Hours
                         </h4>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                        <div className="text-sm text-gray-600">
                           {service.operatingHours?.is24Hours ? (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                              <span>24/7 Open</span>
-                            </div>
+                            <p>24 Hours Open</p>
                           ) : (
                             <div className="grid grid-cols-2 gap-2">
                               {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
                                 .filter(day => service.operatingHours?.[day]?.isOpen)
                                 .map(day => (
                                   <div key={day} className="flex justify-between">
-                                    <span className="capitalize text-gray-700 dark:text-gray-300">{day}:</span>
-                                    <span className="font-medium">
+                                    <span className="capitalize">{day}:</span>
+                                    <span>
                                       {service.operatingHours[day].open} - {service.operatingHours[day].close}
                                     </span>
                                   </div>
@@ -805,33 +780,23 @@ const AdminServices = () => {
                       </div>
                     </div>
 
-                    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <h4 className="font-medium mb-3 text-gray-700 dark:text-gray-300">Contact Information</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div className="mt-4">
+                      <h4 className="font-medium mb-2">Contact</h4>
+                      <div className="text-sm text-gray-600 space-y-1">
                         {service.contact?.phone && (
-                          <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-500">Phone</p>
-                            <p className="text-gray-800 dark:text-gray-200">{service.contact.phone}</p>
-                          </div>
+                          <p>
+                            <span className="font-medium">Phone:</span> {service.contact.phone}
+                          </p>
                         )}
                         {service.contact?.email && (
-                          <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-500">Email</p>
-                            <p className="text-gray-800 dark:text-gray-200">{service.contact.email}</p>
-                          </div>
+                          <p>
+                            <span className="font-medium">Email:</span> {service.contact.email}
+                          </p>
                         )}
                         {service.contact?.website && (
-                          <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-500">Website</p>
-                            <a 
-                              href={service.contact.website} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline dark:text-blue-400"
-                            >
-                              {service.contact.website}
-                            </a>
-                          </div>
+                          <p>
+                            <span className="font-medium">Website:</span> {service.contact.website}
+                          </p>
                         )}
                       </div>
                     </div>
