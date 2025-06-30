@@ -52,12 +52,12 @@ const AdminDashboard = () => {
   const { overview, serviceTypes = [], recentAlerts = [] } = data || {};
 
   // Fallback data in case API returns empty
-  const fallbackServiceTypes = [
-    { _id: 'hospital', count: 12 },
-    { _id: 'police', count: 8 },
-    { _id: 'fire', count: 5 },
-    { _id: 'ambulance', count: 7 }
-  ];
+  // const fallbackServiceTypes = [
+  //   { _id: 'hospital', count: 12 },
+  //   { _id: 'police', count: 8 },
+  //   { _id: 'fire', count: 5 },
+  //   { _id: 'ambulance', count: 7 }
+  // ];
 
   // Pie Chart Data - ensure we have valid data
   const pieChartData = serviceTypes && serviceTypes.length > 0 ? serviceTypes : fallbackServiceTypes;
