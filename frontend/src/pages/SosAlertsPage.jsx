@@ -33,7 +33,6 @@ const SosAlertsPage = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState(null);
-  // CHANGED: Default center coordinates adjusted to [lat, lng]
   const [mapCenter, setMapCenter] = useState([20.5937, 78.9629]); // India center
 
   // Fetch alerts
@@ -95,7 +94,6 @@ const SosAlertsPage = () => {
     return `${Math.floor(diffMinutes / 1440)}d ago`;
   };
 
-  // CHANGED: Fixed coordinate order in useEffect
   useEffect(() => {
     if (selectedAlert && selectedAlert.location?.coordinates) {
       setMapCenter([
@@ -104,6 +102,29 @@ const SosAlertsPage = () => {
       ]);
     }
   }, [selectedAlert]);
+
+  // Prepare services data for MapComponent
+  const getAlertMarkerData = () => {
+    return alerts
+      .filter(alert => alert.location?.coordinates)
+      .map(alert => ({
+        _id: alert._id,
+        type: alert.emergencyType,
+        name: alert.user?.name || 'Anonymous',
+        location: {
+          coordinates: [
+            alert.location.coordinates[0], // Longitude
+            alert.location.coordinates[1]  // Latitude
+          ],
+          address: {
+            fullAddress: alert.location?.address || 'Unknown location'
+          }
+        },
+        contact: {
+          phone: alert.user?.phone
+        }
+      }));
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -260,25 +281,24 @@ const SosAlertsPage = () => {
 
       {/* Main content with map and alert details */}
       <div className="flex-1 flex flex-col">
-        {/* CHANGED: Map view with corrected coordinate handling */}
+        {/* Map view */}
         <div className="h-1/2 border-b border-gray-200">
           <MapComponent 
             center={mapCenter}
             zoom={selectedAlert ? 14 : 10}
-            markers={alerts
-              .filter(alert => alert.location?.coordinates) // Only include alerts with coordinates
-              .map(alert => ({
-                position: [
-                  alert.location.coordinates[1], // Latitude
-                  alert.location.coordinates[0]  // Longitude
-                ],
-                color: 
-                  alert.status === 'pending' ? 'yellow' :
-                  alert.status === 'acknowledged' ? 'blue' :
-                  alert.status === 'responding' ? 'orange' : 'green',
-                onClick: () => setSelectedAlert(alert),
-                isSelected: selectedAlert?._id === alert._id
-              }))}
+            services={getAlertMarkerData()}
+            showUserLocation={false}
+            selectedService={selectedAlert ? {
+              _id: selectedAlert._id,
+              type: selectedAlert.emergencyType,
+              location: {
+                coordinates: [
+                  selectedAlert.location.coordinates[0],
+                  selectedAlert.location.coordinates[1]
+                ]
+              }
+            } : null}
+            onServiceClick={setSelectedAlert}
           />
         </div>
 
@@ -340,7 +360,6 @@ const SosAlertsPage = () => {
                     </h3>
                     <div className="space-y-2">
                       <p>{selectedAlert.location?.address || 'No address provided'}</p>
-                      {/* CHANGED: Corrected coordinate display order */}
                       <p className="text-sm text-gray-500">
                         Coordinates: {selectedAlert.location?.coordinates?.[1]?.toFixed(6)} (lat), 
                         {selectedAlert.location?.coordinates?.[0]?.toFixed(6)} (lng)
