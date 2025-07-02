@@ -46,9 +46,9 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-3xl mx-auto p-4 sm:p-6">
       {/* Profile Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
         <div className="flex items-center gap-3 mb-6">
           <User className="w-6 h-6 text-blue-600" />
           <h2 className="text-xl font-bold text-gray-800">My Profile</h2>
@@ -122,7 +122,7 @@ const ProfilePage = () => {
       </div>
 
       {/* Emergency Contacts Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
         <div className="flex items-center gap-3 mb-4">
           <Phone className="w-6 h-6 text-blue-600" />
           <h2 className="text-xl font-bold text-gray-800">Emergency Contacts</h2>
@@ -199,7 +199,7 @@ const ProfilePage = () => {
       </div>
 
       {/* Change Password Section */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-4">
           <Lock className="w-6 h-6 text-blue-600" />
           <h2 className="text-xl font-bold text-gray-800">Change Password</h2>

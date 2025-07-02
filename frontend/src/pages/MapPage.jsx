@@ -28,7 +28,7 @@ const MapPage = () => {
   const [showDangerZones, setShowDangerZones] = useState(true);
   const [selectedType, setSelectedType] = useState('hospital');
   const [selectedService, setSelectedService] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
   const [controlsOpen, setControlsOpen] = useState(false);
 
   const { data: services = [], isLoading, isError } = useQuery(
@@ -111,17 +111,15 @@ const MapPage = () => {
         <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-white shadow-sm z-30">
           <div className="flex items-center gap-2 sm:gap-4">
             <button 
-              className="lg:hidden p-1 rounded-md hover:bg-gray-100"
+              className="lg:hidden p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label="Toggle sidebar"
             >
               <Menu className="w-6 h-6" />
             </button>
-
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
               Emergency Services Map
             </h1>
-
             <div className="hidden sm:flex items-center ml-4 text-sm text-gray-600">
               <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
               <span className="truncate max-w-xs">
@@ -140,9 +138,8 @@ const MapPage = () => {
               )}
             </div>
           </div>
-
           <button
-            className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-1 sm:py-2 rounded-lg font-bold shadow-md flex items-center gap-2 animate-pulse-glow"
+            className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-1 sm:py-2 rounded-lg font-bold shadow-md flex items-center gap-2 animate-pulse-glow focus:outline-none focus:ring-2 focus:ring-red-500"
             onClick={handleSOS}
             aria-label="Send emergency SOS"
           >

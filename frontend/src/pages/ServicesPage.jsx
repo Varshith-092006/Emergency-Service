@@ -187,36 +187,30 @@ const ServicesPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col space-y-6">
+    <div className="container mx-auto px-4 py-6 sm:py-8">
+      <div className="flex flex-col space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold text-gray-900">Emergency Services</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Emergency Services</h1>
+          <p className="text-sm sm:text-base text-gray-600">
             {currentLocation ? 'Services near your location' : 'Browse all emergency services'}
           </p>
         </div>
 
         {/* View Toggle */}
-        <div className="flex justify-end">
-          <div className="inline-flex bg-gray-100 rounded-lg p-1">
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:gap-4">
+          <div className="inline-flex bg-gray-100 rounded-lg p-1 self-end">
             <button
               onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded-md ${viewMode === 'list' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600'}`}
+              className={`px-3 py-2 rounded-md text-sm ${viewMode === 'list' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600'}`}
             >
-              <div className="flex items-center gap-2">
-                <List className="w-5 h-5" />
-                <span>List</span>
-              </div>
+              <List className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('map')}
-              className={`px-4 py-2 rounded-md ${viewMode === 'map' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600'}`}
+              className={`px-3 py-2 rounded-md text-sm ${viewMode === 'map' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600'}`}
             >
-              <div className="flex items-center gap-2">
-                <Map className="w-5 h-5" />
-                <span>Map</span>
-              </div>
+              <Map className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -229,14 +223,14 @@ const ServicesPage = () => {
           <input
             type="text"
             placeholder="Search services..."
-            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
             <select
@@ -316,7 +310,7 @@ const ServicesPage = () => {
 
         {/* Map View */}
         {viewMode === 'map' && (
-          <div className="rounded-lg overflow-hidden shadow-md h-[600px]">
+          <div className="rounded-lg overflow-hidden shadow-md h-[400px] sm:h-[600px]">
             <MapComponent
               services={sortedServices}
               center={currentLocation ? [currentLocation.lat, currentLocation.lng] : undefined}
@@ -329,7 +323,7 @@ const ServicesPage = () => {
 
         {/* List View */}
         {viewMode === 'list' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {sortedServices.map(service => (
               <ServiceCard 
                 key={service._id} 
