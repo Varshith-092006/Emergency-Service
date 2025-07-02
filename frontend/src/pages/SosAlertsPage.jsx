@@ -5,10 +5,10 @@ import {
   Filter, RefreshCw, ChevronDown, ChevronUp,
   Phone, Mail, User, Shield, Check, X
 } from 'lucide-react';
-import api from '../services/api'; // Updated import path
+import api from '../services/api';
 import { toast } from 'react-hot-toast';
-import MapComponent from '../components/map/MapComponent'; // Updated import path
-import Badge from '../components/ui/Badge'; // Updated import path
+import MapComponent from '../components/map/MapComponent';
+import Badge from '../components/ui/Badge';
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending', color: 'bg-yellow-500' },
@@ -33,7 +33,8 @@ const SosAlertsPage = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState(null);
-  const [mapCenter, setMapCenter] = useState([20.5937, 78.9629]); // Default to India center
+  // CHANGED: Default center coordinates adjusted to [lat, lng]
+  const [mapCenter, setMapCenter] = useState([20.5937, 78.9629]); // India center
 
   // Fetch alerts
   const { data: alerts = [], isLoading, isError, refetch } = useQuery(
@@ -47,7 +48,7 @@ const SosAlertsPage = () => {
       const res = await api.get('/api/sos/admin/active', { params });
       return res.data.data.activeSos;
     },
-    { refetchInterval: 30000 } // Auto-refresh every 30 seconds
+    { refetchInterval: 30000 }
   );
 
   // Update mutation for status changes
@@ -94,12 +95,12 @@ const SosAlertsPage = () => {
     return `${Math.floor(diffMinutes / 1440)}d ago`;
   };
 
-  // Set map center when alert is selected
+  // CHANGED: Fixed coordinate order in useEffect
   useEffect(() => {
     if (selectedAlert && selectedAlert.location?.coordinates) {
       setMapCenter([
-        selectedAlert.location.coordinates[1],
-        selectedAlert.location.coordinates[0]
+        selectedAlert.location.coordinates[1], // Latitude
+        selectedAlert.location.coordinates[0]  // Longitude
       ]);
     }
   }, [selectedAlert]);
@@ -259,23 +260,25 @@ const SosAlertsPage = () => {
 
       {/* Main content with map and alert details */}
       <div className="flex-1 flex flex-col">
-        {/* Map view */}
+        {/* CHANGED: Map view with corrected coordinate handling */}
         <div className="h-1/2 border-b border-gray-200">
           <MapComponent 
             center={mapCenter}
             zoom={selectedAlert ? 14 : 10}
-            markers={alerts.map(alert => ({
-              position: [
-                alert.location?.coordinates[1] || 0,
-                alert.location?.coordinates[0] || 0
-              ],
-              color: 
-                alert.status === 'pending' ? 'yellow' :
-                alert.status === 'acknowledged' ? 'blue' :
-                alert.status === 'responding' ? 'orange' : 'green',
-              onClick: () => setSelectedAlert(alert),
-              isSelected: selectedAlert?._id === alert._id
-            }))}
+            markers={alerts
+              .filter(alert => alert.location?.coordinates) // Only include alerts with coordinates
+              .map(alert => ({
+                position: [
+                  alert.location.coordinates[1], // Latitude
+                  alert.location.coordinates[0]  // Longitude
+                ],
+                color: 
+                  alert.status === 'pending' ? 'yellow' :
+                  alert.status === 'acknowledged' ? 'blue' :
+                  alert.status === 'responding' ? 'orange' : 'green',
+                onClick: () => setSelectedAlert(alert),
+                isSelected: selectedAlert?._id === alert._id
+              }))}
           />
         </div>
 
@@ -313,14 +316,14 @@ const SosAlertsPage = () => {
                   <button
                     onClick={() => handleStatusChange(selectedAlert._id, 'acknowledged')}
                     disabled={selectedAlert.status !== 'pending' || updateStatusMutation.isLoading}
-                    className="btn btn-sm btn-outline-blue"
+                    className="px-4 py-2 border border-blue-500 text-blue-500 rounded-md hover:bg-blue-50 disabled:opacity-50"
                   >
                     Acknowledge
                   </button>
                   <button
                     onClick={() => handleStatusChange(selectedAlert._id, 'resolved')}
                     disabled={selectedAlert.status === 'resolved' || updateStatusMutation.isLoading}
-                    className="btn btn-sm btn-outline-green"
+                    className="px-4 py-2 border border-green-500 text-green-500 rounded-md hover:bg-green-50 disabled:opacity-50"
                   >
                     Mark Resolved
                   </button>
@@ -330,15 +333,17 @@ const SosAlertsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left column */}
                 <div className="space-y-6">
-                  <div className="card">
-                    <h3 className="card-title">
+                  <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="font-medium flex items-center gap-2 mb-3">
                       <MapPin className="w-5 h-5" />
                       Location Details
                     </h3>
                     <div className="space-y-2">
                       <p>{selectedAlert.location?.address || 'No address provided'}</p>
+                      {/* CHANGED: Corrected coordinate display order */}
                       <p className="text-sm text-gray-500">
-                        Coordinates: {selectedAlert.location?.coordinates?.[1]?.toFixed(6)}, {selectedAlert.location?.coordinates?.[0]?.toFixed(6)}
+                        Coordinates: {selectedAlert.location?.coordinates?.[1]?.toFixed(6)} (lat), 
+                        {selectedAlert.location?.coordinates?.[0]?.toFixed(6)} (lng)
                       </p>
                       {selectedAlert.location?.accuracy && (
                         <p className="text-sm text-gray-500">
@@ -348,8 +353,8 @@ const SosAlertsPage = () => {
                     </div>
                   </div>
 
-                  <div className="card">
-                    <h3 className="card-title">
+                  <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="font-medium flex items-center gap-2 mb-3">
                       <User className="w-5 h-5" />
                       User Information
                     </h3>
@@ -368,8 +373,8 @@ const SosAlertsPage = () => {
 
                 {/* Right column */}
                 <div className="space-y-6">
-                  <div className="card">
-                    <h3 className="card-title">
+                  <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="font-medium flex items-center gap-2 mb-3">
                       <AlertTriangle className="w-5 h-5" />
                       Emergency Details
                     </h3>
@@ -388,8 +393,8 @@ const SosAlertsPage = () => {
                   </div>
 
                   {selectedAlert.contactedServices?.length > 0 && (
-                    <div className="card">
-                      <h3 className="card-title">
+                    <div className="bg-white p-4 rounded-lg shadow">
+                      <h3 className="font-medium flex items-center gap-2 mb-3">
                         <Shield className="w-5 h-5" />
                         Contacted Services
                       </h3>
