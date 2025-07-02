@@ -39,8 +39,8 @@ const serviceColors = {
   fire: '#dc2626',
   pharmacy: '#10b981',
   clinic: '#8b5cf6',
-  medical: '#ef4444', // Added for SOS alerts
-  other: '#8b5cf6'    // Added for SOS alerts
+  medical: '#ef4444',
+  other: '#8b5cf6'
 };
 
 const MapComponent = ({ 
@@ -58,7 +58,7 @@ const MapComponent = ({
   const { getAddressFromCoords } = useLocation();
 
   useEffect(() => {
-    if (selectedService && mapRef.current) {
+    if (selectedService && mapRef.current && selectedService.location?.coordinates) {
       mapRef.current.setView([
         selectedService.location.coordinates[1],
         selectedService.location.coordinates[0]
@@ -69,8 +69,25 @@ const MapComponent = ({
   // Safely get address text
   const getAddressText = (address) => {
     if (!address) return 'No address available';
+    
+    // Handle string address directly
     if (typeof address === 'string') return address;
-    if (address.fullAddress) return address.fullAddress;
+    
+    // Handle object with fullAddress
+    if (typeof address === 'object' && address !== null) {
+      if (address.fullAddress) return address.fullAddress;
+      if (address.formattedAddress) return address.formattedAddress;
+      
+      // Try to construct address from components
+      const addressParts = [];
+      if (address.street) addressParts.push(address.street);
+      if (address.city) addressParts.push(address.city);
+      if (address.state) addressParts.push(address.state);
+      if (address.country) addressParts.push(address.country);
+      
+      if (addressParts.length > 0) return addressParts.join(', ');
+    }
+    
     return 'No address available';
   };
 
@@ -116,16 +133,18 @@ const MapComponent = ({
             <Popup>
               <div className="text-center">
                 <div className="font-semibold text-green-600 text-sm">📍 You are here</div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Accuracy: ±{userLocation.accuracy?.toFixed(0) || 'unknown'} meters
-                </div>
+                {userLocation.accuracy && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Accuracy: ±{userLocation.accuracy.toFixed(0)} meters
+                  </div>
+                )}
                 <button
                   onClick={async () => {
                     const newAddress = await getAddressFromCoords(
                       userLocation.lat,
                       userLocation.lng
                     );
-                    // Note: You'll need to handle this address update in your parent component
+                    // Handle address update in parent component
                   }}
                   className="mt-2 flex items-center justify-center gap-1 text-xs text-blue-600 hover:text-blue-800"
                 >
@@ -139,15 +158,20 @@ const MapComponent = ({
         
         {/* Service Markers */}
         {services.map((service) => {
-          // Handle different service structures (SOS alerts vs regular services)
+          if (!service.location?.coordinates || service.location.coordinates.length !== 2) {
+            return null;
+          }
+
           const serviceType = service.type || service.emergencyType || 'other';
-          const coordinates = service.location?.coordinates || [];
-          if (coordinates.length !== 2) return null;
+          const [lng, lat] = service.location.coordinates;
+          const address = getAddressText(service.location.address);
+          const phone = service.contact?.phone || service.user?.phone;
+          const name = service.name || service.user?.name || 'Anonymous';
 
           return (
             <Marker
               key={service._id || service.id}
-              position={[coordinates[1], coordinates[0]]}
+              position={[lat, lng]}
               icon={createCustomIcon(
                 serviceType, 
                 serviceColors[serviceType] || '#ef4444', 
@@ -160,28 +184,23 @@ const MapComponent = ({
               <Popup className={isMobile ? 'w-64' : 'w-72'}>
                 <div className="space-y-2">
                   <div className="font-bold text-primary-700 flex items-center gap-1">
-                    <MapPin className="w-4 h-4" /> {service.name || service.user?.name || 'Anonymous'}
+                    <MapPin className="w-4 h-4" /> {name}
                   </div>
                   <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                     {serviceType.toUpperCase()}
                   </div>
                   <div className="text-sm text-gray-700">
-                    {getAddressText(service.location?.address)}
+                    {address}
                   </div>
-                  {service.contact?.phone && (
+                  {phone && (
                     <div className="text-sm text-gray-600">
-                      📞 {service.contact.phone}
-                    </div>
-                  )}
-                  {service.user?.phone && !service.contact?.phone && (
-                    <div className="text-sm text-gray-600">
-                      📞 {service.user.phone}
+                      📞 {phone}
                     </div>
                   )}
                   <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-2'} mt-3`}>
-                    {(service.contact?.phone || service.user?.phone) && (
+                    {phone && (
                       <a
-                        href={`tel:${service.contact?.phone || service.user?.phone}`}
+                        href={`tel:${phone}`}
                         className={`inline-flex items-center ${
                           isMobile ? 'justify-center' : ''
                         } px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700`}
@@ -192,7 +211,7 @@ const MapComponent = ({
                       </a>
                     )}
                     <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${coordinates[1]},${coordinates[0]}`}
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`inline-flex items-center ${
