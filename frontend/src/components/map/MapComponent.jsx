@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Phone, Navigation, RefreshCw } from 'lucide-react';
@@ -39,8 +39,6 @@ const serviceColors = {
   fire: '#dc2626',
   pharmacy: '#10b981',
   clinic: '#8b5cf6',
-  medical: '#ef4444',
-  other: '#8b5cf6'
 };
 
 const MapComponent = ({ 
@@ -56,9 +54,10 @@ const MapComponent = ({
 }) => {
   const mapRef = useRef();
   const { getAddressFromCoords } = useLocation();
+  const [hoveredService, setHoveredService] = useState(null);
 
   useEffect(() => {
-    if (selectedService && mapRef.current && selectedService.location?.coordinates) {
+    if (selectedService && mapRef.current) {
       mapRef.current.setView([
         selectedService.location.coordinates[1],
         selectedService.location.coordinates[0]
@@ -66,28 +65,10 @@ const MapComponent = ({
     }
   }, [selectedService]);
 
-  // Safely get address text
   const getAddressText = (address) => {
     if (!address) return 'No address available';
-    
-    // Handle string address directly
     if (typeof address === 'string') return address;
-    
-    // Handle object with fullAddress
-    if (typeof address === 'object' && address !== null) {
-      if (address.fullAddress) return address.fullAddress;
-      if (address.formattedAddress) return address.formattedAddress;
-      
-      // Try to construct address from components
-      const addressParts = [];
-      if (address.street) addressParts.push(address.street);
-      if (address.city) addressParts.push(address.city);
-      if (address.state) addressParts.push(address.state);
-      if (address.country) addressParts.push(address.country);
-      
-      if (addressParts.length > 0) return addressParts.join(', ');
-    }
-    
+    if (address.fullAddress) return address.fullAddress;
     return 'No address available';
   };
 
@@ -133,18 +114,15 @@ const MapComponent = ({
             <Popup>
               <div className="text-center">
                 <div className="font-semibold text-green-600 text-sm">📍 You are here</div>
-                {userLocation.accuracy && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    Accuracy: ±{userLocation.accuracy.toFixed(0)} meters
-                  </div>
-                )}
+                <div className="text-xs text-gray-500 mt-1">
+                  Accuracy: ±{userLocation.accuracy.toFixed(0)} meters
+                </div>
                 <button
                   onClick={async () => {
                     const newAddress = await getAddressFromCoords(
                       userLocation.lat,
                       userLocation.lng
                     );
-                    // Handle address update in parent component
                   }}
                   className="mt-2 flex items-center justify-center gap-1 text-xs text-blue-600 hover:text-blue-800"
                 >
@@ -162,45 +140,64 @@ const MapComponent = ({
             return null;
           }
 
-          const serviceType = service.type || service.emergencyType || 'other';
+          const serviceType = service.type || 'other';
           const [lng, lat] = service.location.coordinates;
-          const address = getAddressText(service.location.address);
-          const phone = service.contact?.phone || service.user?.phone;
-          const name = service.name || service.user?.name || 'Anonymous';
+          const isHovered = hoveredService?._id === service._id;
 
           return (
             <Marker
-              key={service._id || service.id}
+              key={service._id}
               position={[lat, lng]}
               icon={createCustomIcon(
                 serviceType, 
                 serviceColors[serviceType] || '#ef4444', 
-                selectedService?._id === service._id || selectedService?.id === service.id
+                selectedService?._id === service._id
               )}
               eventHandlers={{
+                mouseover: () => setHoveredService(service),
+                mouseout: () => setHoveredService(null),
                 click: () => onServiceClick && onServiceClick(service),
               }}
             >
+              {isHovered && (
+                <Popup className="hover-popup" closeButton={false}>
+                  <div className="p-2">
+                    <div className="text-xs text-gray-500 mb-1">
+                      Coordinates: {lat.toFixed(4)}, {lng.toFixed(4)}
+                    </div>
+                    <div className="font-semibold">{service.name}</div>
+                    <div className="text-sm text-gray-700">
+                      {getAddressText(service.location.address)}
+                    </div>
+                    {service.contact?.phone && (
+                      <div className="text-sm mt-1">
+                        <Phone className="inline mr-1" size={14} />
+                        {service.contact.phone}
+                      </div>
+                    )}
+                  </div>
+                </Popup>
+              )}
               <Popup className={isMobile ? 'w-64' : 'w-72'}>
                 <div className="space-y-2">
                   <div className="font-bold text-primary-700 flex items-center gap-1">
-                    <MapPin className="w-4 h-4" /> {name}
+                    <MapPin className="w-4 h-4" /> {service.name}
                   </div>
                   <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                     {serviceType.toUpperCase()}
                   </div>
                   <div className="text-sm text-gray-700">
-                    {address}
+                    {getAddressText(service.location.address)}
                   </div>
-                  {phone && (
+                  {service.contact?.phone && (
                     <div className="text-sm text-gray-600">
-                      📞 {phone}
+                      📞 {service.contact.phone}
                     </div>
                   )}
                   <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-2'} mt-3`}>
-                    {phone && (
+                    {service.contact?.phone && (
                       <a
-                        href={`tel:${phone}`}
+                        href={`tel:${service.contact.phone}`}
                         className={`inline-flex items-center ${
                           isMobile ? 'justify-center' : ''
                         } px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700`}
@@ -254,6 +251,27 @@ const MapComponent = ({
           </Circle>
         ))}
       </MapContainer>
+
+      <style jsx global>{`
+        .hover-popup .leaflet-popup-content-wrapper {
+          border-radius: 6px;
+          padding: 0;
+          background: white;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .hover-popup .leaflet-popup-content {
+          margin: 0;
+        }
+        .hover-popup .leaflet-popup-tip {
+          background: white;
+        }
+        .custom-marker {
+          transition: transform 0.2s;
+        }
+        .custom-marker:hover {
+          transform: scale(1.1);
+        }
+      `}</style>
     </div>
   );
 };
