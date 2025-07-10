@@ -187,8 +187,18 @@ emergencyServiceSchema.statics.findNearby = async function(coordinates, options 
     isActive: true
   };
 
-  if (options.type) query.type = options.type;
-  if (options.category) query.category = options.category;
+  // ✅ Fix type filtering
+  if (options.type) {
+    query.type = Array.isArray(options.type)
+      ? { $in: options.type }
+      : options.type;
+  }
+
+  if (options.category) {
+    query.category = Array.isArray(options.category)
+      ? { $in: options.category }
+      : options.category;
+  }
 
   let services = await this.find(query)
     .select('name type category contact location operatingHours ratings isActive')
@@ -197,6 +207,7 @@ emergencyServiceSchema.statics.findNearby = async function(coordinates, options 
     .populate('addedBy', 'name email')
     .lean();
 
+  // ✅ Filter by current time if needed
   if (options.isOpenNow) {
     const now = new Date();
     const day = now.toLocaleString('en-US', { weekday: 'long' }).toLowerCase();
@@ -211,6 +222,7 @@ emergencyServiceSchema.statics.findNearby = async function(coordinates, options 
 
   return services;
 };
+
 
 // Methods
 emergencyServiceSchema.methods.updateRating = async function(newRating) {
