@@ -251,27 +251,6 @@ const MapComponent = ({
           </Circle>
         ))}
       </MapContainer>
-
-      <style jsx global>{`
-        .hover-popup .leaflet-popup-content-wrapper {
-          border-radius: 6px;
-          padding: 0;
-          background: white;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        .hover-popup .leaflet-popup-content {
-          margin: 0;
-        }
-        .hover-popup .leaflet-popup-tip {
-          background: white;
-        }
-        .custom-marker {
-          transition: transform 0.2s;
-        }
-        .custom-marker:hover {
-          transform: scale(1.1);
-        }
-      `}</style>
     </div>
   );
 };

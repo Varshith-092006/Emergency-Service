@@ -30,8 +30,12 @@ router.get('/', optionalAuth, [
 ], asyncHandler(async (req, res) => {
   req.setTimeout(DEFAULT_TIMEOUT);
 
+  console.log('GET /api/services request received');
+  console.log('Query parameters:', req.query);
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Validation errors:', errors.array());
     throw createValidationError(errors.array());
   }
 
@@ -47,6 +51,14 @@ router.get('/', optionalAuth, [
     limit: params.limit,
     skip: (params.page - 1) * params.limit
   };
+
+  // Debug logging
+  console.log('Query params:', params);
+  console.log('DB Query:', dbQuery);
+  
+  // Check total count first
+  const totalCount = await EmergencyService.countDocuments(dbQuery);
+  console.log('Total services in database:', totalCount);
 
   // Apply filters
   if (params.type) dbQuery.type = params.type;
@@ -71,6 +83,13 @@ router.get('/', optionalAuth, [
     .sort(params.sort || '-ratings.average')
     .setOptions(queryOptions)
     .lean();
+
+  console.log('Services found:', services.length);
+  if (services.length === 0) {
+    console.log('No services found with query:', dbQuery);
+  } else {
+    console.log('First service:', services[0]);
+  }
 
   const total = await EmergencyService.countDocuments(dbQuery).maxTimeMS(DEFAULT_TIMEOUT);
 

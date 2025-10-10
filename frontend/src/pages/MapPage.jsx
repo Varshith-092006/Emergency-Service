@@ -12,6 +12,7 @@ const SERVICE_TYPES = [
   { key: 'hospital', label: 'Hospitals', color: '#ef4444', icon: '🏥' },
   { key: 'police', label: 'Police', color: '#3b82f6', icon: '🚓' },
   { key: 'ambulance', label: 'Ambulance', color: '#f59e0b', icon: '🚑' },
+  { key: 'pharmacy', label: 'Pharmacy', color: '#10b981', icon: '💊' },
 ];
 
 const DEFAULT_DANGER_ZONES = [
