@@ -44,18 +44,46 @@ const N8nChatWidget = () => {
         token: userToken
       });
 
-      let responseText = message;
+      let responseText = "";
+      const responseData = res.data;
 
-      // Extract navigation tags: [NAVIGATE:/path]
-      const navMatch = responseText?.match(/\[NAVIGATE:(\/[a-zA-Z0-9_-]+)\]/i);
-      
-      if (navMatch) {
-        const targetPage = navMatch[1];
-        responseText = responseText.replace(navMatch[0], '').trim();
-        setTimeout(() => navigate(targetPage), 1500);
-      } else if (action === "navigate" && page) {
-        // Fallback for n8n JSON tools
-        setTimeout(() => navigate(page), 1500);
+      // Check for array with navigation output, e.g. [{ "output": { "action": "navigate", "route": "/services" } }]
+      if (Array.isArray(responseData) && responseData.length > 0) {
+        const firstItem = responseData[0];
+        if (firstItem.output && firstItem.output.action === "navigate" && firstItem.output.route) {
+          setTimeout(() => navigate(firstItem.output.route), 1500);
+          responseText = "Navigating you there...";
+        } else {
+          // If it's another kind of array, try to extract text
+          responseText = firstItem.output || firstItem.text || firstItem.message || JSON.stringify(firstItem);
+        }
+      } else if (typeof responseData === "object" && responseData !== null) {
+        // Check for direct object with navigation output
+        if (responseData.output && responseData.output.action === "navigate" && responseData.output.route) {
+          setTimeout(() => navigate(responseData.output.route), 1500);
+          responseText = "Navigating you there...";
+        } else {
+          // Common keys for n8n responses
+          responseText = responseData.output || responseData.text || responseData.message || responseData.response || JSON.stringify(responseData);
+        }
+      } else {
+        // Fallback for primitive types (string)
+        responseText = String(responseData || "");
+      }
+
+      // Fallback for text-based navigation: [NAVIGATE:/path]
+      if (typeof responseText === 'string') {
+        const navMatch = responseText.match(/\[NAVIGATE:(\/[a-zA-Z0-9_-]+)\]/i);
+        if (navMatch) {
+          const targetPage = navMatch[1];
+          responseText = responseText.replace(navMatch[0], '').trim() || "Navigating...";
+          setTimeout(() => navigate(targetPage), 1500);
+        }
+      }
+
+      // Convert response to string if it's somehow still an object
+      if (typeof responseText !== 'string') {
+        responseText = JSON.stringify(responseText);
       }
 
       if (responseText) {
