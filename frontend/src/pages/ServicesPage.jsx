@@ -40,19 +40,26 @@ const ServicesPage = () => {
   const { currentLocation } = useLocation();
   const [viewMode, setViewMode] = useState('list');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [sortBy, setSortBy] = useState('distance');
   const [radius, setRadius] = useState(10);
   const [showOpenNow, setShowOpenNow] = useState(false);
-  const [lastRefresh, setLastRefresh] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const { data: services = [], isLoading, error, refetch } = useQuery(
-    ['services', searchTerm, selectedType, selectedCategory, currentLocation, radius, sortBy, showOpenNow, lastRefresh],
+    ['services', debouncedSearchTerm, selectedType, selectedCategory, currentLocation, radius, sortBy, showOpenNow],
     async ({ signal }) => {
       try {
         const params = {
-          search: searchTerm || undefined,
+          search: debouncedSearchTerm || undefined,
           type: selectedType || undefined,
           category: selectedCategory || undefined,
           isOpenNow: showOpenNow ? 'true' : undefined,
@@ -85,6 +92,7 @@ const ServicesPage = () => {
       retry: 2,
       retryDelay: 2000,
       staleTime: 5 * 60 * 1000,
+      keepPreviousData: true,
       onError: (err) => {
         if (err.code !== 'ERR_CANCELED') {
           toast.error(err.response?.data?.message || 'Failed to load services');
@@ -92,14 +100,6 @@ const ServicesPage = () => {
       }
     }
   );
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLastRefresh(Date.now());
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm, selectedType, selectedCategory, radius, showOpenNow]);
 
   const calculateDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371;
@@ -404,9 +404,14 @@ const ServiceCard = ({ service, currentLocation, calculateDistance }) => {
         <div className="space-y-3">
           <div className="flex items-start gap-3">
             <MapPin className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-gray-600">
-              {service.location.address.fullAddress}
-            </p>
+            <a 
+              href={service.location?.coordinates ? `https://www.google.com/maps/search/?api=1&query=${service.location.coordinates[1]},${service.location.coordinates[0]}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(service.location?.address?.fullAddress || '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-gray-600 hover:text-primary-600 hover:underline cursor-pointer flex-1"
+            >
+              {service.location?.address?.fullAddress || 'Address not available'}
+            </a>
           </div>
 
           {distance !== null && (

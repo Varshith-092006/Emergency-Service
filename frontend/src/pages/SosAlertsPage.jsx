@@ -256,10 +256,16 @@ const SosAlertsPage = () => {
                         </Badge>
                       </div>
                       <div className="mt-1 flex items-center text-sm text-gray-500">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        <span className="truncate">
+                        <MapPin className="flex-shrink-0 w-4 h-4 mr-1" />
+                        <a 
+                          href={alert.location?.coordinates ? `https://www.google.com/maps/search/?api=1&query=${alert.location.coordinates[1]},${alert.location.coordinates[0]}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(alert.location?.address || '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="truncate hover:text-blue-600 hover:underline cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {alert.location?.address || 'Unknown location'}
-                        </span>
+                        </a>
                       </div>
                     </div>
                     <div className="text-xs text-gray-400 flex items-center">
@@ -359,7 +365,14 @@ const SosAlertsPage = () => {
                       Location Details
                     </h3>
                     <div className="space-y-2">
-                      <p>{selectedAlert.location?.address || 'No address provided'}</p>
+                        <a 
+                          href={selectedAlert.location?.coordinates ? `https://www.google.com/maps/search/?api=1&query=${selectedAlert.location.coordinates[1]},${selectedAlert.location.coordinates[0]}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedAlert.location?.address || '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-blue-600 hover:underline cursor-pointer block"
+                        >
+                          {selectedAlert.location?.address || 'No address provided'}
+                        </a>
                       <p className="text-sm text-gray-500">
                         Coordinates: {selectedAlert.location?.coordinates?.[1]?.toFixed(6)} (lat), 
                         {selectedAlert.location?.coordinates?.[0]?.toFixed(6)} (lng)

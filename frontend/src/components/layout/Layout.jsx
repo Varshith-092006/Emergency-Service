@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import N8nChatWidget from '../chatbot/N8nChatWidget';
 import { 
   MapPin, 
   Phone, 
@@ -15,7 +16,8 @@ import {
   Users as UsersIcon,
   AlertTriangle,
   HelpCircle,
-  Settings
+  Settings,
+  HeartPulse
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -50,17 +52,17 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+      <header className="glass-panel sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link 
               to="/" 
-              className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md"
+              className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md hover-lift"
               aria-label="Go to homepage"
             >
-              <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-lg flex items-center justify-center shadow-sm">
+                <HeartPulse className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold text-gray-900">
                 EmergencyConnect
@@ -76,10 +78,10 @@ const Layout = ({ children }) => {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       isActive(item.href)
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-500/20'
+                        : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
                     } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     aria-current={isActive(item.href) ? "page" : undefined}
                   >
@@ -146,7 +148,7 @@ const Layout = ({ children }) => {
                   </Link>
                   <Link
                     to="/register"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="bg-gradient-to-r from-blue-600 to-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover-lift focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     aria-label="Register"
                   >
                     Register
@@ -189,10 +191,10 @@ const Layout = ({ children }) => {
                       key={item.name}
                       to={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium ${
+                      className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-base font-medium transition-all duration-200 ${
                         isActive(item.href)
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                          ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-500/20'
+                          : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
                       } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                       aria-current={isActive(item.href) ? "page" : undefined}
                     >
@@ -277,13 +279,13 @@ const Layout = ({ children }) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200">
+      <footer className="bg-slate-50 border-t border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-lg flex items-center justify-center shadow-sm">
+                  <HeartPulse className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-bold text-gray-900">EmergencyConnect</span>
               </div>
@@ -336,6 +338,9 @@ const Layout = ({ children }) => {
           </div>
         </div>
       </footer>
+      
+      {/* Global AI Chatbot Widget */}
+      <N8nChatWidget />
     </div>
   );
 };

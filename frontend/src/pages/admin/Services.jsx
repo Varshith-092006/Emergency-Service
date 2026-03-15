@@ -57,6 +57,8 @@ const AdminServices = () => {
     isActive: true
   });
 
+  const DEFAULT_DAY_HOURS = { open: '09:00', close: '17:00', isOpen: false };
+
   // Fetch services
   const { data: services, isLoading, isError } = useQuery(
     ['admin-services', search],
@@ -205,16 +207,19 @@ const AdminServices = () => {
   };
 
   const handleDayToggle = (day) => {
-    setServiceForm(prev => ({
-      ...prev,
-      operatingHours: {
-        ...prev.operatingHours,
-        [day]: {
-          ...prev.operatingHours[day],
-          isOpen: !prev.operatingHours[day].isOpen
+    setServiceForm(prev => {
+      const currentDay = prev.operatingHours?.[day] || DEFAULT_DAY_HOURS;
+      return {
+        ...prev,
+        operatingHours: {
+          ...prev.operatingHours,
+          [day]: {
+            ...currentDay,
+            isOpen: !currentDay.isOpen
+          }
         }
-      }
-    }));
+      };
+    });
   };
 
   const handle24HoursToggle = () => {
@@ -270,16 +275,19 @@ const AdminServices = () => {
   };
 
   const handleOperatingHoursChange = (day, field, value) => {
-    setServiceForm(prev => ({
-      ...prev,
-      operatingHours: {
-        ...prev.operatingHours,
-        [day]: {
-          ...prev.operatingHours[day],
-          [field]: value
+    setServiceForm(prev => {
+      const currentDay = prev.operatingHours?.[day] || DEFAULT_DAY_HOURS;
+      return {
+        ...prev,
+        operatingHours: {
+          ...prev.operatingHours,
+          [day]: {
+            ...currentDay,
+            [field]: value
+          }
         }
-      }
-    }));
+      };
+    });
   };
 
   return (
@@ -294,7 +302,7 @@ const AdminServices = () => {
         </div>
         <button 
           onClick={() => setShowUpload(!showUpload)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          className="btn btn-primary btn-lg shadow-soft"
         >
           {showUpload ? (
             <>
@@ -312,24 +320,26 @@ const AdminServices = () => {
 
       {/* Search and Upload Section */}
       <div className="mb-8 space-y-4">
-        <div className="relative max-w-md">
+        <div className="relative max-w-md card shadow-soft">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
             <Search className="w-5 h-5" />
           </div>
           <input
             type="text"
             placeholder="Search services by name, type, or location..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
         {showUpload && (
-          <form onSubmit={handleUpload} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Bulk Upload Services</h3>
+          <form onSubmit={handleUpload} className="card shadow-card dark:bg-gray-800 dark:border-gray-700">
+            <div className="card-header">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Bulk Upload Services</h3>
+            </div>
             
-            <div className="mb-4">
+            <div className="card-body">
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   CSV File Upload
@@ -394,7 +404,7 @@ const AdminServices = () => {
                 <button
                   type="submit"
                   disabled={uploadMutation.isLoading}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-70"
+                  className="btn btn-success shadow-soft disabled:opacity-70"
                 >
                   {uploadMutation.isLoading ? (
                     <Loader2 className="animate-spin w-5 h-5" />
@@ -415,21 +425,24 @@ const AdminServices = () => {
           <Loader2 className="animate-spin w-10 h-10 text-blue-600 dark:text-blue-400" />
         </div>
       ) : isError ? (
-        <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800 flex items-center gap-2">
+        <div className="alert alert-error mb-4">
           <AlertTriangle className="w-5 h-5" />
-          <span>Failed to load services. Please try again.</span>
+          <div>
+            <div className="font-bold">Failed to load services</div>
+            <div className="text-sm">Please try again.</div>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
           {services?.length === 0 ? (
-            <div className="p-4 mb-4 text-sm text-blue-700 bg-blue-100 rounded-lg dark:bg-blue-200 dark:text-blue-800 flex items-center gap-2">
+            <div className="alert mb-4">
               <span>No services found matching your search criteria</span>
             </div>
           ) : (
             services?.map((service) => (
-              <div key={service._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-all hover:shadow-md">
+              <div key={service._id} className="card shadow-card dark:bg-gray-800 dark:border-gray-700 overflow-hidden transition-all">
                 {editingService === service._id ? (
-                  <form onSubmit={handleUpdate} className="p-6">
+                  <form onSubmit={handleUpdate} className="card-body">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Edit Service</h3>
@@ -630,7 +643,7 @@ const AdminServices = () => {
                         </label>
                       </div>
                       
-                      {!serviceForm.operatingHours.is24Hours && (
+                      {!serviceForm.operatingHours?.is24Hours && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                           {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
                             <div key={day} className="border p-3 rounded-lg">
@@ -639,20 +652,20 @@ const AdminServices = () => {
                                 <div className="flex items-center">
                                   <input
                                     type="checkbox"
-                                    checked={serviceForm.operatingHours[day].isOpen}
+                                    checked={(serviceForm.operatingHours?.[day]?.isOpen) || false}
                                     onChange={() => handleDayToggle(day)}
                                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
                                   />
                                 </div>
                               </div>
                               
-                              {serviceForm.operatingHours[day].isOpen && (
+                              {serviceForm.operatingHours?.[day]?.isOpen && (
                                 <div className="grid grid-cols-2 gap-2">
                                   <div>
                                     <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Open</label>
                                     <input
                                       type="time"
-                                      value={serviceForm.operatingHours[day].open}
+                                      value={serviceForm.operatingHours?.[day]?.open || '09:00'}
                                       onChange={(e) => handleOperatingHoursChange(day, 'open', e.target.value)}
                                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                     />
@@ -661,7 +674,7 @@ const AdminServices = () => {
                                     <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Close</label>
                                     <input
                                       type="time"
-                                      value={serviceForm.operatingHours[day].close}
+                                      value={serviceForm.operatingHours?.[day]?.close || '17:00'}
                                       onChange={(e) => handleOperatingHoursChange(day, 'close', e.target.value)}
                                       className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                     />
@@ -691,14 +704,14 @@ const AdminServices = () => {
                       <button
                         type="button"
                         onClick={() => setEditingService(null)}
-                        className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+                        className="btn btn-outline btn-sm"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={updateMutation.isLoading}
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70"
+                        className="btn btn-primary btn-sm disabled:opacity-70"
                       >
                         {updateMutation.isLoading ? (
                           <span className="flex items-center">
@@ -710,28 +723,28 @@ const AdminServices = () => {
                     </div>
                   </form>
                 ) : (
-                  <div className="p-6">
+                  <div className="card-body">
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{service.name}</h3>
                         <div className="flex flex-wrap items-center gap-2 mt-2">
-                          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full dark:bg-blue-900 dark:text-blue-200">
+                          <span className="badge badge-primary">
                             {service.type}
                           </span>
-                          <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full dark:bg-purple-900 dark:text-purple-200">
+                          <span className="badge badge-secondary">
                             {service.category}
                           </span>
                           {service.isActive ? (
-                            <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full dark:bg-green-900 dark:text-green-200">
+                            <span className="badge badge-success">
                               Active
                             </span>
                           ) : (
-                            <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full dark:bg-red-900 dark:text-red-200">
+                            <span className="badge badge-error">
                               Inactive
                             </span>
                           )}
                           {service.isVerified && (
-                            <span className="px-2 py-1 text-xs font-medium bg-cyan-100 text-cyan-800 rounded-full dark:bg-cyan-900 dark:text-cyan-200">
+                            <span className="badge badge-primary">
                               Verified
                             </span>
                           )}
@@ -794,7 +807,7 @@ const AdminServices = () => {
                                   <div key={day} className="flex justify-between">
                                     <span className="capitalize text-gray-700 dark:text-gray-300">{day}:</span>
                                     <span className="font-medium">
-                                      {service.operatingHours[day].open} - {service.operatingHours[day].close}
+                                      {(service.operatingHours?.[day]?.open) || '09:00'} - {(service.operatingHours?.[day]?.close) || '17:00'}
                                     </span>
                                   </div>
                                 ))

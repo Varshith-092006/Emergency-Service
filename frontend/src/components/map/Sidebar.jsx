@@ -125,9 +125,15 @@ const Sidebar = ({
                       </div>
                       <div className="mt-1 flex items-center text-sm text-gray-500">
                         <MapPin className="flex-shrink-0 w-4 h-4 mr-1" />
-                        <span className="truncate">
+                        <a 
+                          href={service.location?.coordinates ? `https://www.google.com/maps/search/?api=1&query=${service.location.coordinates[1]},${service.location.coordinates[0]}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(service.location?.address?.fullAddress || '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="truncate hover:text-blue-600 hover:underline cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {service.location?.address?.fullAddress || 'Address not available'}
-                        </span>
+                        </a>
                       </div>
                       {service.contact?.phone && (
                         <div className="mt-3">

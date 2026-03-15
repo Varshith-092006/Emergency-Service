@@ -54,9 +54,14 @@ const ServiceDetailPage = () => {
               <MapPin className="w-4 h-4 text-gray-500 mt-0.5" />
               <div>
                 <div className="font-medium text-gray-900">Address</div>
-                <div className="text-sm text-gray-600">
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${serviceLocation[0]},${serviceLocation[1]}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-600 hover:text-primary-600 hover:underline block"
+                >
                   {data.location?.address?.fullAddress || 'No address available'}
-                </div>
+                </a>
               </div>
             </div>
             
