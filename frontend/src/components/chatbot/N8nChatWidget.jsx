@@ -71,7 +71,8 @@ const N8nChatWidget = () => {
         message: userMsg,
         sessionId: sessionId,
         location: locationData,
-        userId: userId
+        userId: userId,
+        token: userToken
       });
 
       let responseText = "";
