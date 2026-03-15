@@ -64,16 +64,23 @@ const N8nChatWidget = () => {
         try {
           const userData = JSON.parse(userStr);
           userId = userData._id || userData.id;
-        } catch(e) { console.error("Could not parse user from localStorage", e); }
+        } catch (e) { console.error("Could not parse user from localStorage", e); }
       }
+
+      console.log("Extracted userId from localStorage:", userId);
 
       const res = await axios.post(N8N_WEBHOOK_URL, {
         message: userMsg,
         sessionId: sessionId,
         location: locationData,
         userId: userId,
-        token: userToken
-      });
+      },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`
+          }
+        }
+      );
 
       let responseText = "";
       const responseData = res.data;

@@ -205,8 +205,8 @@ app.use('*', (req, res) => {
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(
-      process.env.NODE_ENV === 'production' 
-        ? process.env.MONGODB_URI_PROD 
+      process.env.NODE_ENV === 'production'
+        ? process.env.MONGODB_URI_PROD
         : process.env.MONGODB_URI,
       {
         useNewUrlParser: true,
@@ -241,7 +241,7 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   await connectDB();
-  
+
   server.listen(PORT, () => {
     console.log(`🚨 Emergency Service Locator API running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
