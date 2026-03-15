@@ -47,31 +47,35 @@ const N8nChatWidget = () => {
       let responseText = "";
       const responseData = res.data;
 
-      // Check for array with navigation output, e.g. [{ "output": { "action": "navigate", "route": "/services" } }]
+      let actionObj = null;
+
+      // Support responses that are either objects or arrays containing objects
       if (Array.isArray(responseData) && responseData.length > 0) {
-        const firstItem = responseData[0];
-        if (firstItem.output && firstItem.output.action === "navigate" && firstItem.output.route) {
-          setTimeout(() => navigate(firstItem.output.route), 1500);
-          responseText = "Navigating you there...";
-        } else {
-          // If it's another kind of array, try to extract text
-          responseText = firstItem.output || firstItem.text || firstItem.message || JSON.stringify(firstItem);
-        }
+        actionObj = responseData[0];
       } else if (typeof responseData === "object" && responseData !== null) {
-        // Check for direct object with navigation output
-        if (responseData.output && responseData.output.action === "navigate" && responseData.output.route) {
-          setTimeout(() => navigate(responseData.output.route), 1500);
-          responseText = "Navigating you there...";
+        actionObj = responseData;
+      }
+
+      if (actionObj) {
+        // N8n structure can sometimes wrap outputs in another key, but typically they are top-level. Support both.
+        const payload = actionObj.output || actionObj;
+
+        // Interpret based on the schema format
+        if (payload.action === "navigate" && payload.route) {
+          setTimeout(() => navigate(payload.route), 1500);
+          responseText = payload.message || "Navigating you there...";
+        } else if (payload.action === "answer" || payload.action === "unknown") {
+          responseText = payload.message || "I don't have an answer for that.";
         } else {
-          // Common keys for n8n responses
-          responseText = responseData.output || responseData.text || responseData.message || responseData.response || JSON.stringify(responseData);
+          // Fallback if action is missing entirely but there is a message
+          responseText = payload.message || payload.text || payload.response || JSON.stringify(payload);
         }
       } else {
-        // Fallback for primitive types (string)
+        // Complete fallback for primitives
         responseText = String(responseData || "");
       }
 
-      // Fallback for text-based navigation: [NAVIGATE:/path]
+      // Safe text parsing for older [NAVIGATE:/path] plain text style just in case
       if (typeof responseText === 'string') {
         const navMatch = responseText.match(/\[NAVIGATE:(\/[a-zA-Z0-9_-]+)\]/i);
         if (navMatch) {
@@ -81,7 +85,7 @@ const N8nChatWidget = () => {
         }
       }
 
-      // Convert response to string if it's somehow still an object
+      // Ensure responseText is ultimately a string for rendering
       if (typeof responseText !== 'string') {
         responseText = JSON.stringify(responseText);
       }
