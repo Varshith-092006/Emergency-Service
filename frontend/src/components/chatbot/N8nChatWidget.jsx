@@ -36,9 +36,12 @@ const N8nChatWidget = () => {
     setIsTyping(true);
 
     try {
+      const userToken = localStorage.getItem('token');
+      
       const res = await axios.post(N8N_WEBHOOK_URL, {
         message: userMsg,
-        sessionId: sessionId
+        sessionId: sessionId,
+        token: userToken
       });
 
       const { message, action, page } = res.data;
