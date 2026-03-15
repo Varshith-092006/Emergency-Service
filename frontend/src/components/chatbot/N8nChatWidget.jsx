@@ -44,15 +44,22 @@ const N8nChatWidget = () => {
         token: userToken
       });
 
-      const { message, action, page } = res.data;
+      let responseText = message;
 
-      if (message) {
-        setMessages(prev => [...prev, { role: 'ai', content: message }]);
+      // Extract navigation tags: [NAVIGATE:/path]
+      const navMatch = responseText?.match(/\[NAVIGATE:(\/[a-zA-Z0-9_-]+)\]/i);
+      
+      if (navMatch) {
+        const targetPage = navMatch[1];
+        responseText = responseText.replace(navMatch[0], '').trim();
+        setTimeout(() => navigate(targetPage), 1500);
+      } else if (action === "navigate" && page) {
+        // Fallback for n8n JSON tools
+        setTimeout(() => navigate(page), 1500);
       }
 
-      // Handle Navigation commanded by n8n
-      if (action === "navigate" && page) {
-        setTimeout(() => navigate(page), 1500);
+      if (responseText) {
+        setMessages(prev => [...prev, { role: 'ai', content: responseText }]);
       }
     } catch (err) {
       console.error("Chat Error", err);
