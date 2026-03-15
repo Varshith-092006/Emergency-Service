@@ -37,11 +37,31 @@ const N8nChatWidget = () => {
 
     try {
       const userToken = localStorage.getItem('token');
-      
+
+      let locationData = null;
+
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject)
+          );
+
+          const { latitude, longitude, accuracy } = position.coords;
+
+          locationData = {
+            coordinates: [longitude, latitude],
+            accuracy: accuracy
+          };
+        } catch (geoErr) {
+          console.error("Location error", geoErr);
+        }
+      }
+
       const res = await axios.post(N8N_WEBHOOK_URL, {
         message: userMsg,
         sessionId: sessionId,
-        token: userToken
+        token: userToken,
+        location: locationData
       });
 
       let responseText = "";
@@ -67,43 +87,43 @@ const N8nChatWidget = () => {
         } else if (payload.action === "api_call" && payload.api === "sendSOS") {
           // Attempt to dispatch an SOS alert directly
           try {
-             const token = localStorage.getItem('token');
-             if (navigator.geolocation) {
-               navigator.geolocation.getCurrentPosition(
-                 async (position) => {
-                   const { latitude, longitude, accuracy } = position.coords;
-                   
-                   try {
-                     await axios.post('/api/sos', {
-                       lat: latitude,
-                       lng: longitude,
-                       accuracy: accuracy,
-                       emergencyType: 'other', // Or infer from context
-                       description: 'Triggered via Emergency AI Assistant'
-                     }, {
-                       headers: { Authorization: `Bearer ${token}` }
-                     });
-                     
-                     // Optionally emit the socket event if you imported SocketContext here
-                     
-                     setMessages(prev => [...prev, { role: 'ai', content: "SOS Alert Dispatched Successfully from your location." }]);
-                   } catch (err) {
-                     console.error("SOS API Error", err);
-                     setMessages(prev => [...prev, { role: 'ai', content: "Failed to dispatch SOS alert. Please try calling emergency services manually." }]);
-                   }
-                 },
-                 (geoErr) => {
-                   console.error("Geolocation Error", geoErr);
-                   setMessages(prev => [...prev, { role: 'ai', content: "Unable to get your location to send the SOS. Please ensure location services are enabled." }]);
-                 }
-               );
-             } else {
-               setMessages(prev => [...prev, { role: 'ai', content: "Your browser does not support geolocation required for SOS." }]);
-             }
-             
-             responseText = payload.message || "Dispatching SOS Alert... please wait.";
+            const token = localStorage.getItem('token');
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                  const { latitude, longitude, accuracy } = position.coords;
+
+                  try {
+                    await axios.post('/api/sos', {
+                      lat: latitude,
+                      lng: longitude,
+                      accuracy: accuracy,
+                      emergencyType: 'other', // Or infer from context
+                      description: 'Triggered via Emergency AI Assistant'
+                    }, {
+                      headers: { Authorization: `Bearer ${token}` }
+                    });
+
+                    // Optionally emit the socket event if you imported SocketContext here
+
+                    setMessages(prev => [...prev, { role: 'ai', content: "SOS Alert Dispatched Successfully from your location." }]);
+                  } catch (err) {
+                    console.error("SOS API Error", err);
+                    setMessages(prev => [...prev, { role: 'ai', content: "Failed to dispatch SOS alert. Please try calling emergency services manually." }]);
+                  }
+                },
+                (geoErr) => {
+                  console.error("Geolocation Error", geoErr);
+                  setMessages(prev => [...prev, { role: 'ai', content: "Unable to get your location to send the SOS. Please ensure location services are enabled." }]);
+                }
+              );
+            } else {
+              setMessages(prev => [...prev, { role: 'ai', content: "Your browser does not support geolocation required for SOS." }]);
+            }
+
+            responseText = payload.message || "Dispatching SOS Alert... please wait.";
           } catch (e) {
-             responseText = "There was an error trying to dispatch the SOS alert.";
+            responseText = "There was an error trying to dispatch the SOS alert.";
           }
         } else if (payload.action === "answer" || payload.action === "unknown") {
           responseText = payload.message || "I don't have an answer for that.";
