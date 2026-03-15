@@ -57,11 +57,21 @@ const N8nChatWidget = () => {
         }
       }
 
+      // Retrieve user info to grab the userId
+      const userStr = localStorage.getItem('user');
+      let userId = null;
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          userId = userData._id || userData.id;
+        } catch(e) { console.error("Could not parse user from localStorage", e); }
+      }
+
       const res = await axios.post(N8N_WEBHOOK_URL, {
         message: userMsg,
         sessionId: sessionId,
-        token: userToken,
-        location: locationData
+        location: locationData,
+        userId: userId
       });
 
       let responseText = "";
