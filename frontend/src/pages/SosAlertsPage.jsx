@@ -9,6 +9,7 @@ import api from '../services/api';
 import { toast } from 'react-hot-toast';
 import MapComponent from '../components/map/MapComponent';
 import Badge from '../components/ui/Badge';
+import { useSocket } from '../contexts/SocketContext';
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending', color: 'bg-yellow-500' },
@@ -26,6 +27,7 @@ const TYPE_OPTIONS = [
 
 const SosAlertsPage = () => {
   const queryClient = useQueryClient();
+  const { socket } = useSocket();
   const [filters, setFilters] = useState({
     status: [],
     type: [],
@@ -49,6 +51,26 @@ const SosAlertsPage = () => {
     },
     { refetchInterval: 30000 }
   );
+
+  // Listen for real-time SOS socket events so chatbot alerts appear immediately
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewAlert = (data) => {
+      // Show a toast for the incoming alert
+      toast.error('🚨 New SOS Alert received!', {
+        duration: 8000,
+        icon: '🆘'
+      });
+      // Immediately refetch alerts from the server
+      refetch();
+    };
+
+    socket.on('emergency-alert', handleNewAlert);
+    return () => {
+      socket.off('emergency-alert', handleNewAlert);
+    };
+  }, [socket, refetch]);
 
   // Update mutation for status changes
   const updateStatusMutation = useMutation(
@@ -106,7 +128,7 @@ const SosAlertsPage = () => {
   // Prepare services data for MapComponent
   const getAlertMarkerData = () => {
     return alerts
-      .filter(alert => alert.location?.coordinates)
+      .filter(alert => alert.location?.coordinates && alert.location.coordinates.length >= 2)
       .map(alert => ({
         _id: alert._id,
         type: alert.emergencyType,
@@ -258,7 +280,7 @@ const SosAlertsPage = () => {
                       <div className="mt-1 flex items-center text-sm text-gray-500">
                         <MapPin className="flex-shrink-0 w-4 h-4 mr-1" />
                         <a 
-                          href={alert.location?.coordinates ? `https://www.google.com/maps/search/?api=1&query=${alert.location.coordinates[1]},${alert.location.coordinates[0]}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(alert.location?.address || '')}`}
+                          href={alert.location?.coordinates && alert.location.coordinates.length >= 2 ? `https://www.google.com/maps/search/?api=1&query=${alert.location.coordinates[1]},${alert.location.coordinates[0]}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(alert.location?.address || '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="truncate hover:text-blue-600 hover:underline cursor-pointer"
@@ -366,7 +388,7 @@ const SosAlertsPage = () => {
                     </h3>
                     <div className="space-y-2">
                         <a 
-                          href={selectedAlert.location?.coordinates ? `https://www.google.com/maps/search/?api=1&query=${selectedAlert.location.coordinates[1]},${selectedAlert.location.coordinates[0]}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedAlert.location?.address || '')}`}
+                          href={selectedAlert.location?.coordinates && selectedAlert.location.coordinates.length >= 2 ? `https://www.google.com/maps/search/?api=1&query=${selectedAlert.location.coordinates[1]},${selectedAlert.location.coordinates[0]}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedAlert.location?.address || '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="hover:text-blue-600 hover:underline cursor-pointer block"

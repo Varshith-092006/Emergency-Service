@@ -2,13 +2,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
-import { MessageSquare, X, Send, Bot, User } from 'lucide-react';
+import { MessageSquare, X, Send, Bot } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useSocket } from '../../contexts/SocketContext';
+import { toast } from 'react-hot-toast';
 
 const N8N_WEBHOOK_URL = "https://varshith09.app.n8n.cloud/webhook/chatbot";
 // Generate a random ID once per session so n8n remembers the chat history
 const sessionId = uuidv4();
 
 const N8nChatWidget = () => {
+  const { user } = useAuth();
+  const { sendSOSAlert } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     { role: 'ai', content: 'Hi! I am your Emergency Nav Assistant. How can I help?' }
@@ -27,6 +32,15 @@ const N8nChatWidget = () => {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  // Helper: wrap geolocation in a Promise so we can use async/await
+  const getCurrentPositionAsync = () =>
+    new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000
+      })
+    );
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -42,10 +56,7 @@ const N8nChatWidget = () => {
 
       if (navigator.geolocation) {
         try {
-          const position = await new Promise((resolve, reject) =>
-            navigator.geolocation.getCurrentPosition(resolve, reject)
-          );
-
+          const position = await getCurrentPositionAsync();
           const { latitude, longitude, accuracy } = position.coords;
 
           locationData = {
@@ -57,17 +68,10 @@ const N8nChatWidget = () => {
         }
       }
 
-      // Retrieve user info to grab the userId
-      const userStr = localStorage.getItem('user');
-      let userId = null;
-      if (userStr) {
-        try {
-          const userData = JSON.parse(userStr);
-          userId = userData._id || userData.id;
-        } catch (e) { console.error("Could not parse user from localStorage", e); }
-      }
+      // Retrieve user info from useAuth context
+      let userId = user ? (user._id || user.id) : null;
 
-      console.log("Extracted userId from localStorage:", userId);
+      console.log("Extracted userId from useAuth:", userId);
 
       const res = await axios.post(N8N_WEBHOOK_URL, {
         message: userMsg,
@@ -98,51 +102,79 @@ const N8nChatWidget = () => {
         // N8n structure can sometimes wrap outputs in another key, but typically they are top-level. Support both.
         const payload = actionObj.output || actionObj;
 
-        // Interpret based on the schema format
         if (payload.action === "navigate" && payload.route) {
           setTimeout(() => navigate(payload.route), 1500);
           responseText = payload.message || "Navigating you there...";
+
         } else if (payload.action === "api_call" && payload.api === "sendSOS") {
-          // Attempt to dispatch an SOS alert directly
+          // --- SOS DISPATCH: fully async/await, no nested callbacks ---
+
+          // 1. Show "dispatching" message immediately and stop typing indicator
+          const dispatchingMsg = payload.message || "🚨 Dispatching SOS Alert... please wait.";
+          setMessages(prev => [...prev, { role: 'ai', content: dispatchingMsg }]);
+          setIsTyping(false);
+
           try {
             const token = localStorage.getItem('token');
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                  const { latitude, longitude, accuracy } = position.coords;
 
-                  try {
-                    await axios.post('/api/sos', {
-                      lat: latitude,
-                      lng: longitude,
-                      accuracy: accuracy,
-                      emergencyType: 'other', // Or infer from context
-                      description: 'Triggered via Emergency AI Assistant'
-                    }, {
-                      headers: { Authorization: `Bearer ${token}` }
-                    });
-
-                    // Optionally emit the socket event if you imported SocketContext here
-
-                    setMessages(prev => [...prev, { role: 'ai', content: "SOS Alert Dispatched Successfully from your location." }]);
-                  } catch (err) {
-                    console.error("SOS API Error", err);
-                    setMessages(prev => [...prev, { role: 'ai', content: "Failed to dispatch SOS alert. Please try calling emergency services manually." }]);
-                  }
-                },
-                (geoErr) => {
-                  console.error("Geolocation Error", geoErr);
-                  setMessages(prev => [...prev, { role: 'ai', content: "Unable to get your location to send the SOS. Please ensure location services are enabled." }]);
-                }
-              );
-            } else {
-              setMessages(prev => [...prev, { role: 'ai', content: "Your browser does not support geolocation required for SOS." }]);
+            if (!navigator.geolocation) {
+              setMessages(prev => [...prev, {
+                role: 'ai',
+                content: "❌ Your browser does not support geolocation, which is required for SOS."
+              }]);
+              toast.error("Geolocation not supported by your browser.", { duration: 6000 });
+              return;
             }
 
-            responseText = payload.message || "Dispatching SOS Alert... please wait.";
-          } catch (e) {
-            responseText = "There was an error trying to dispatch the SOS alert.";
+            // 2. Await location (now using async/await properly)
+            let position;
+            try {
+              position = await getCurrentPositionAsync();
+            } catch (geoErr) {
+              console.error("Geolocation Error", geoErr);
+              setMessages(prev => [...prev, {
+                role: 'ai',
+                content: "⚠️ Unable to get your location. Please enable location services and try again."
+              }]);
+              toast.error("📍 Location access denied. SOS was not sent.", { duration: 6000 });
+              return;
+            }
+
+            const { latitude, longitude, accuracy } = position.coords;
+
+            // 3. POST to the SOS API — same as MapPage does
+            await axios.post('/api/sos', {
+              lat: latitude,
+              lng: longitude,
+              accuracy: accuracy,
+              emergencyType: 'other',
+              description: 'Triggered via Emergency AI Assistant'
+            }, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+
+            // 4. Emit socket event so admin alerts page updates in real time
+            sendSOSAlert({ lat: latitude, lng: longitude }, 'other');
+
+            // 5. Show success messages
+            setMessages(prev => [...prev, {
+              role: 'ai',
+              content: "✅ SOS Alert dispatched successfully! Emergency services have been notified of your location. Stay calm and keep your phone accessible."
+            }]);
+            toast.success("🚨 Emergency SOS Alert sent successfully!", { duration: 6000 });
+
+          } catch (err) {
+            console.error("SOS API Error", err);
+            const errMsg = err.response?.data?.message || "Unknown error occurred";
+            setMessages(prev => [...prev, {
+              role: 'ai',
+              content: `❌ Failed to dispatch SOS alert (${errMsg}). Please call emergency services manually or use the SOS button on the map.`
+            }]);
+            toast.error("SOS failed. Please use the Emergency SOS button on the map.", { duration: 6000, icon: '🆘' });
           }
+
+          return; // All message updates already handled above
+
         } else if (payload.action === "answer" || payload.action === "unknown") {
           responseText = payload.message || "I don't have an answer for that.";
         } else {

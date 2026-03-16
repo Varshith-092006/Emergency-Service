@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MapPin, Crosshair, AlertTriangle, Menu, Sliders, RefreshCw } from 'lucide-react';
-import { useQuery } from 'react-query';
+import { useQuery, useQueryClient } from 'react-query';
 import { useLocation } from '../contexts/LocationContext';
 import { useSocket } from '../contexts/SocketContext';
 import api from '../services/api';
@@ -23,7 +23,8 @@ const RADIUS_OPTIONS = [1, 3, 5, 10, 20];
 
 const MapPage = () => {
   const { currentLocation, address, getCurrentLocation, isLoadingLocation } = useLocation();
-  const { sendSOSAlert } = useSocket();
+  const { sendSOSAlert, socket } = useSocket();
+  const queryClient = useQueryClient();
 
   const [radius, setRadius] = useState(5);
   const [showDangerZones, setShowDangerZones] = useState(true);
@@ -56,9 +57,74 @@ const MapPage = () => {
     }
   );
 
+  // Fetch active SOS alerts to display on the map
+  const { data: sosAlerts = [], refetch: refetchSOS } = useQuery(
+    ['sos-alerts-map'],
+    async () => {
+      try {
+        const { data } = await api.get('/api/sos', {
+          params: { status: 'pending' }
+        });
+        return data.data?.sosAlerts || [];
+      } catch (error) {
+        // Non-admin users may not have access to all alerts, silently fail
+        console.error('Could not fetch SOS alerts for map:', error);
+        return [];
+      }
+    },
+    {
+      refetchInterval: 30000,
+      staleTime: 10000
+    }
+  );
+
+  // Listen for real-time SOS events to instantly show new markers
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewAlert = () => {
+      // Refetch SOS alerts when a new one arrives via socket
+      refetchSOS();
+    };
+
+    socket.on('emergency-alert', handleNewAlert);
+    return () => {
+      socket.off('emergency-alert', handleNewAlert);
+    };
+  }, [socket, refetchSOS]);
+
+  // Convert SOS alerts to marker format compatible with MapComponent
+  const sosMarkers = useMemo(() => {
+    return sosAlerts
+      .filter(alert => alert.location?.coordinates && alert.location.coordinates.length >= 2)
+      .map(alert => ({
+        _id: `sos-${alert._id}`,
+        type: alert.emergencyType || 'other',
+        name: `🆘 SOS: ${alert.user?.name || alert.description || 'Emergency Alert'}`,
+        location: {
+          coordinates: [
+            alert.location.coordinates[0], // Longitude
+            alert.location.coordinates[1]  // Latitude
+          ],
+          address: {
+            fullAddress: alert.location?.address || alert.description || 'SOS Alert Location'
+          }
+        },
+        contact: {
+          phone: alert.user?.phone || null
+        }
+      }));
+  }, [sosAlerts]);
+
   const filteredServices = useMemo(
     () => services.filter(s => s.type === selectedType),
     [services, selectedType]
+  );
+
+  // Combine filtered services with SOS alert markers
+  const allMapMarkers = useMemo(
+    () => [...filteredServices, ...sosMarkers],
+    [filteredServices, sosMarkers]
   );
 
   const handleSOS = async () => {
@@ -79,6 +145,8 @@ const MapPage = () => {
       })
     ]);
     toast.success('🚨 Emergency alert sent successfully!');
+    // Immediately refetch SOS alerts to show the new marker
+    refetchSOS();
   } catch (error) {
     console.error('SOS Error:', error);
     toast.error(error.response?.data?.message || 'Failed to send emergency alert. Please try again.');
@@ -204,7 +272,7 @@ const MapPage = () => {
 
         <div className="flex-1 relative">
           <MapComponent
-            services={filteredServices}
+            services={allMapMarkers}
             center={
               currentLocation
                 ? [currentLocation.lat, currentLocation.lng]

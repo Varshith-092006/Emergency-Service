@@ -39,6 +39,8 @@ const serviceColors = {
   fire: '#dc2626',
   pharmacy: '#10b981',
   clinic: '#8b5cf6',
+  medical: '#ef4444',
+  other: '#f97316',
 };
 
 const MapComponent = ({ 
@@ -136,7 +138,7 @@ const MapComponent = ({
         
         {/* Service Markers */}
         {services.map((service) => {
-          if (!service.location?.coordinates || service.location.coordinates.length !== 2) {
+          if (!service.location?.coordinates || service.location.coordinates.length < 2) {
             return null;
           }
 
