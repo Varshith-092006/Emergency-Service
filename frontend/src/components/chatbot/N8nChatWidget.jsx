@@ -6,6 +6,7 @@ import { MessageSquare, X, Send, Bot } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { toast } from 'react-hot-toast';
+import api from '../../services/api';
 
 const N8N_WEBHOOK_URL = "https://varshith09.app.n8n.cloud/webhook/chatbot";
 // Generate a random ID once per session so n8n remembers the chat history
@@ -178,14 +179,12 @@ const N8nChatWidget = () => {
 
           const { latitude, longitude, accuracy } = position.coords;
 
-          await axios.post('/api/sos', {
+          await api.post('/api/sos', {
             lat: latitude,
             lng: longitude,
             accuracy: accuracy,
             emergencyType: 'other',
             description: 'Triggered via Emergency AI Assistant'
-          }, {
-            headers: { Authorization: `Bearer ${token}` }
           });
 
           sendSOSAlert({ lat: latitude, lng: longitude }, 'other');
