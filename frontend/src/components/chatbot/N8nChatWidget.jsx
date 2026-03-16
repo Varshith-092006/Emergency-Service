@@ -89,7 +89,25 @@ const N8nChatWidget = () => {
       let responseText = "";
       const responseData = res.data;
 
+      // DEBUG: Log the raw n8n response
+      console.log("===== N8N RAW RESPONSE =====");
+      console.log("res.data:", JSON.stringify(responseData, null, 2));
+      console.log("typeof responseData:", typeof responseData);
+
+      // Helper: detect SOS intent from user message text
+      const isSosRequest = (msg) => {
+        const lower = msg.toLowerCase().trim();
+        const sosPatterns = [
+          /\bsos\b/, /\bsend\s*sos\b/, /\bemergency\s*sos\b/,
+          /\bhelp\s*me\b/, /\bi\s*need\s*help\b/, /\bemergency\s*alert\b/,
+          /\btrigger\s*sos\b/, /\bdispatch\s*sos\b/, /\bsend\s*alert\b/,
+          /\bemergency\b.*\bsend\b/, /\bsend\b.*\bemergency\b/
+        ];
+        return sosPatterns.some(pattern => pattern.test(lower));
+      };
+
       let actionObj = null;
+      let sosBranchHandled = false;
 
       // Support responses that are either objects or arrays containing objects
       if (Array.isArray(responseData) && responseData.length > 0) {
@@ -99,91 +117,96 @@ const N8nChatWidget = () => {
       }
 
       if (actionObj) {
-        // N8n structure can sometimes wrap outputs in another key, but typically they are top-level. Support both.
         const payload = actionObj.output || actionObj;
+
+        console.log("Parsed payload:", JSON.stringify(payload, null, 2));
 
         if (payload.action === "navigate" && payload.route) {
           setTimeout(() => navigate(payload.route), 1500);
           responseText = payload.message || "Navigating you there...";
 
         } else if (payload.action === "api_call" && payload.api === "sendSOS") {
-          // --- SOS DISPATCH: fully async/await, no nested callbacks ---
-
-          // 1. Show "dispatching" message immediately and stop typing indicator
-          const dispatchingMsg = payload.message || "🚨 Dispatching SOS Alert... please wait.";
-          setMessages(prev => [...prev, { role: 'ai', content: dispatchingMsg }]);
-          setIsTyping(false);
-
-          try {
-            const token = localStorage.getItem('token');
-
-            if (!navigator.geolocation) {
-              setMessages(prev => [...prev, {
-                role: 'ai',
-                content: "❌ Your browser does not support geolocation, which is required for SOS."
-              }]);
-              toast.error("Geolocation not supported by your browser.", { duration: 6000 });
-              return;
-            }
-
-            // 2. Await location (now using async/await properly)
-            let position;
-            try {
-              position = await getCurrentPositionAsync();
-            } catch (geoErr) {
-              console.error("Geolocation Error", geoErr);
-              setMessages(prev => [...prev, {
-                role: 'ai',
-                content: "⚠️ Unable to get your location. Please enable location services and try again."
-              }]);
-              toast.error("📍 Location access denied. SOS was not sent.", { duration: 6000 });
-              return;
-            }
-
-            const { latitude, longitude, accuracy } = position.coords;
-
-            // 3. POST to the SOS API — same as MapPage does
-            await axios.post('/api/sos', {
-              lat: latitude,
-              lng: longitude,
-              accuracy: accuracy,
-              emergencyType: 'other',
-              description: 'Triggered via Emergency AI Assistant'
-            }, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-
-            // 4. Emit socket event so admin alerts page updates in real time
-            sendSOSAlert({ lat: latitude, lng: longitude }, 'other');
-
-            // 5. Show success messages
-            setMessages(prev => [...prev, {
-              role: 'ai',
-              content: "✅ SOS Alert dispatched successfully! Emergency services have been notified of your location. Stay calm and keep your phone accessible."
-            }]);
-            toast.success("🚨 Emergency SOS Alert sent successfully!", { duration: 6000 });
-
-          } catch (err) {
-            console.error("SOS API Error", err);
-            const errMsg = err.response?.data?.message || "Unknown error occurred";
-            setMessages(prev => [...prev, {
-              role: 'ai',
-              content: `❌ Failed to dispatch SOS alert (${errMsg}). Please call emergency services manually or use the SOS button on the map.`
-            }]);
-            toast.error("SOS failed. Please use the Emergency SOS button on the map.", { duration: 6000, icon: '🆘' });
-          }
-
-          return; // All message updates already handled above
+          sosBranchHandled = true;
+          // (structured SOS from n8n — dispatch below)
 
         } else if (payload.action === "answer" || payload.action === "unknown") {
           responseText = payload.message || "I don't have an answer for that.";
         } else {
-          // Fallback if action is missing entirely but there is a message
           responseText = payload.message || payload.text || payload.response || JSON.stringify(payload);
         }
       } else {
-        // Complete fallback for primitives
+        // responseData is a primitive (string, empty, etc.)
         responseText = String(responseData || "");
+      }
+
+      // *** FALLBACK: if n8n returned empty/no action AND user message looks like SOS ***
+      if (!sosBranchHandled && isSosRequest(userMsg)) {
+        console.log("DEBUG: n8n returned no SOS action, but user message matches SOS intent — triggering SOS directly");
+        sosBranchHandled = true;
+      }
+
+      // --- SOS DISPATCH (handles both structured n8n action AND fallback keyword detection) ---
+      if (sosBranchHandled) {
+        const dispatchingMsg = "🚨 Dispatching SOS Alert... please wait.";
+        setMessages(prev => [...prev, { role: 'ai', content: dispatchingMsg }]);
+        setIsTyping(false);
+
+        try {
+          const token = localStorage.getItem('token');
+
+          if (!navigator.geolocation) {
+            setMessages(prev => [...prev, {
+              role: 'ai',
+              content: "❌ Your browser does not support geolocation, which is required for SOS."
+            }]);
+            toast.error("Geolocation not supported by your browser.", { duration: 6000 });
+            return;
+          }
+
+          let position;
+          try {
+            position = await getCurrentPositionAsync();
+          } catch (geoErr) {
+            console.error("Geolocation Error", geoErr);
+            setMessages(prev => [...prev, {
+              role: 'ai',
+              content: "⚠️ Unable to get your location. Please enable location services and try again."
+            }]);
+            toast.error("📍 Location access denied. SOS was not sent.", { duration: 6000 });
+            return;
+          }
+
+          const { latitude, longitude, accuracy } = position.coords;
+
+          await axios.post('/api/sos', {
+            lat: latitude,
+            lng: longitude,
+            accuracy: accuracy,
+            emergencyType: 'other',
+            description: 'Triggered via Emergency AI Assistant'
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          sendSOSAlert({ lat: latitude, lng: longitude }, 'other');
+
+          setMessages(prev => [...prev, {
+            role: 'ai',
+            content: "✅ SOS Alert dispatched successfully! Emergency services have been notified of your location. Stay calm and keep your phone accessible."
+          }]);
+          toast.success("🚨 Emergency SOS Alert sent successfully!", { duration: 6000 });
+
+        } catch (err) {
+          console.error("SOS API Error", err);
+          const errMsg = err.response?.data?.message || "Unknown error occurred";
+          setMessages(prev => [...prev, {
+            role: 'ai',
+            content: `❌ Failed to dispatch SOS alert (${errMsg}). Please call emergency services manually or use the SOS button on the map.`
+          }]);
+          toast.error("SOS failed. Please use the Emergency SOS button on the map.", { duration: 6000, icon: '🆘' });
+        }
+
+        return;
       }
 
       // Safe text parsing for older [NAVIGATE:/path] plain text style just in case
