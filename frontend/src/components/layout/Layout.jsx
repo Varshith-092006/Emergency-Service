@@ -14,15 +14,19 @@ import {
   Shield,
   BarChart2,
   Users as UsersIcon,
-  AlertTriangle,
+  HeartPulse,
+  Moon,
+  Sun,
   HelpCircle,
   Settings,
-  HeartPulse
+  AlertTriangle
 } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext.jsx';
 
 const Layout = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -50,23 +54,28 @@ const Layout = ({ children }) => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[var(--background-color)] text-[var(--text-color)] flex flex-col transition-colors duration-300">
       {/* Header */}
-      <header className="glass-panel sticky top-0 z-50">
+      <header className="glass-panel sticky top-0 z-[1100] border-b border-[var(--border-color)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link 
               to="/" 
-              className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md hover-lift"
+              className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-[var(--secondary-color)] focus:ring-offset-2 rounded-md transition-transform duration-300 hover:scale-105"
               aria-label="Go to homepage"
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-lg flex items-center justify-center shadow-sm">
-                <HeartPulse className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 bg-[var(--primary-color)] rounded-xl flex items-center justify-center shadow-lg border border-[var(--glass-border)]">
+                <HeartPulse className="w-6 h-6 text-[var(--secondary-color)]" />
               </div>
-              <span className="text-xl font-bold text-gray-900">
-                EmergencyConnect
-              </span>
+              <div className="flex flex-col">
+                <span className="text-xl font-black text-[var(--primary-color)] leading-none italic uppercase tracking-tighter" style={{ fontFamily: 'var(--font-serif)' }}>
+                  Emergency
+                </span>
+                <span className="text-sm font-bold text-[var(--secondary-color)] leading-none tracking-[0.2em] uppercase">
+                  Connect
+                </span>
+              </div>
             </Link>
 
             {/* Desktop Navigation */}
@@ -78,11 +87,11 @@ const Layout = ({ children }) => {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    className={`flex items-center space-x-1 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 ${
                       isActive(item.href)
-                        ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-500/20'
-                        : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                        ? 'bg-[var(--primary-color)] text-white shadow-md'
+                        : 'text-[var(--text-muted)] hover:text-[var(--primary-color)] hover:bg-[var(--surface-hover)]'
+                    } focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]`}
                     aria-current={isActive(item.href) ? "page" : undefined}
                   >
                     <item.icon className="w-4 h-4" />
@@ -92,26 +101,35 @@ const Layout = ({ children }) => {
               })}
             </nav>
 
-            {/* User Menu */}
-            <div className="hidden md:flex items-center space-x-2">
+            {/* User & Theme Actions */}
+            <div className="hidden md:flex items-center space-x-4">
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--primary-color)] hover:bg-[var(--surface-hover)] transition-all duration-200"
+                aria-label="Toggle theme"
+              >
+                {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+              </button>
+
               {isAuthenticated ? (
                 <>
                   {user?.role === 'admin' && (
                     <div className="relative group">
                       <button 
-                        className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-color)] hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                         aria-label="Admin menu"
                       >
                         <Shield className="w-4 h-4" />
                         <span>Admin</span>
                       </button>
-                      <div className="absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                      <div className="absolute right-0 mt-2 w-56 origin-top-right bg-[var(--surface-color)] rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[1110] border border-[var(--border-color)]">
                         <div className="py-1">
                           {adminNavigation.map((item) => (
                             <Link
                               key={item.name}
                               to={item.href}
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                              className="block px-4 py-2 text-sm text-[var(--text-color)] hover:bg-[var(--surface-hover)]"
                             >
                               {item.name}
                             </Link>
@@ -122,7 +140,7 @@ const Layout = ({ children }) => {
                   )}
                   <Link
                     to="/profile"
-                    className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-color)] hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label="User profile"
                   >
                     <User className="w-4 h-4" />
@@ -130,7 +148,7 @@ const Layout = ({ children }) => {
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-color)] hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label="Logout"
                   >
                     <LogOut className="w-4 h-4" />
@@ -141,14 +159,14 @@ const Layout = ({ children }) => {
                 <>
                   <Link
                     to="/login"
-                    className="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-3 py-2 rounded-md text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     aria-label="Login"
                   >
                     Login
                   </Link>
                   <Link
                     to="/register"
-                    className="bg-gradient-to-r from-blue-600 to-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover-lift focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="btn btn-primary"
                     aria-label="Register"
                   >
                     Register
@@ -160,7 +178,7 @@ const Layout = ({ children }) => {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="md:hidden p-3 rounded-2xl text-[var(--text-muted)] hover:text-[var(--primary-color)] hover:bg-[var(--surface-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--secondary-color)] transition-all"
               aria-label="Toggle mobile menu"
             >
               {isMobileMenuOpen ? (
@@ -180,7 +198,7 @@ const Layout = ({ children }) => {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden border-t border-gray-200 overflow-hidden"
+              className="md:hidden border-t border-[var(--border-color)] overflow-hidden bg-[var(--nav-bg)] backdrop-blur-xl"
             >
               <div className="px-2 pt-2 pb-3 space-y-1">
                 {navigation.map((item) => {
@@ -191,11 +209,11 @@ const Layout = ({ children }) => {
                       key={item.name}
                       to={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-base font-medium transition-all duration-200 ${
+                      className={`flex items-center space-x-4 px-4 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${
                         isActive(item.href)
-                          ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-500/20'
-                          : 'text-slate-600 hover:text-blue-600 hover:bg-slate-50'
-                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                          ? 'bg-[var(--primary-color)] text-white shadow-xl translate-x-1'
+                          : 'text-[var(--text-muted)] hover:text-[var(--primary-color)] hover:bg-[var(--surface-hover)]'
+                      } focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]`}
                       aria-current={isActive(item.href) ? "page" : undefined}
                     >
                       <item.icon className="w-5 h-5" />
@@ -215,11 +233,11 @@ const Layout = ({ children }) => {
                         key={item.name}
                         to={item.href}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium ${
+                        className={`flex items-center space-x-4 px-4 py-4 rounded-2xl text-xs font-black uppercase tracking-widest ${
                           isActive(item.href)
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                        } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                            ? 'bg-[var(--secondary-color)] text-[var(--primary-color)]'
+                            : 'text-[var(--text-muted)] hover:text-[var(--primary-color)] hover:bg-[var(--surface-hover)]'
+                        } focus:outline-none focus:ring-2 focus:ring-[var(--secondary-color)]`}
                       >
                         <item.icon className="w-5 h-5" />
                         <span>{item.name}</span>
@@ -229,23 +247,23 @@ const Layout = ({ children }) => {
                 )}
 
                 {/* User Menu Mobile */}
-                <div className="pt-4 border-t border-gray-200">
+                <div className="pt-6 border-t border-[var(--border-color)] space-y-2">
                   {isAuthenticated ? (
                     <>
                       <Link
                         to="/profile"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex items-center space-x-4 px-4 py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--primary-color)] hover:bg-[var(--surface-hover)]"
                       >
-                        <User className="w-5 h-5" />
-                        <span>{user?.name}</span>
+                        <User className="w-5 h-5 text-[var(--secondary-color)]" />
+                        <span>{user?.name} Profile</span>
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center space-x-3 px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full flex items-center space-x-4 px-4 py-4 rounded-2xl text-xs font-black uppercase tracking-widest text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50"
                       >
                         <LogOut className="w-5 h-5" />
-                        <span>Logout</span>
+                        <span>Terminate Session</span>
                       </button>
                     </>
                   ) : (
@@ -253,16 +271,16 @@ const Layout = ({ children }) => {
                       <Link
                         to="/login"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="block px-4 py-5 rounded-2xl text-xs font-black uppercase tracking-[0.3em] text-[var(--text-muted)] hover:bg-[var(--surface-hover)] mb-2"
                       >
-                        Login
+                        Secure Login
                       </Link>
                       <Link
                         to="/register"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="block px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        className="block px-4 py-5 rounded-2xl text-xs font-black uppercase tracking-[0.3em] bg-[var(--primary-color)] text-white text-center shadow-xl"
                       >
-                        Register
+                        System Access
                       </Link>
                     </>
                   )}
@@ -279,29 +297,39 @@ const Layout = ({ children }) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-50 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <footer className="bg-[var(--primary-color)] text-white/80 border-t border-white/5 relative overflow-hidden">
+        {/* Decorative background element */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--secondary-color)] opacity-5 blur-[100px] rounded-full -mr-32 -mt-32"></div>
+        
+        <div className="max-w-7xl mx-auto px-8 sm:px-12 py-20 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-16">
             <div className="md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-teal-500 rounded-lg flex items-center justify-center shadow-sm">
-                  <HeartPulse className="w-5 h-5 text-white" />
+              <div className="flex items-center space-x-4 mb-8">
+                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10">
+                  <HeartPulse className="w-7 h-7 text-[var(--secondary-color)]" />
                 </div>
-                <span className="text-xl font-bold text-gray-900">EmergencyConnect</span>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-black text-white leading-none italic uppercase tracking-tighter" style={{ fontFamily: 'var(--font-serif)' }}>
+                    Emergency
+                  </span>
+                  <span className="text-xs font-black text-[var(--secondary-color)] leading-none tracking-[0.3em] uppercase mt-1">
+                    Connect
+                  </span>
+                </div>
               </div>
-              <p className="text-gray-600">
-                Connecting communities with emergency services when every second counts.
+              <p className="text-lg font-medium text-white/60 leading-relaxed max-w-md italic" style={{ fontFamily: 'var(--font-serif)' }}>
+                "We provide the bridge between crisis and care, ensuring that in your most critical moments, you are never truly alone."
               </p>
             </div>
             
             <div>
-              <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Quick Links</h4>
-              <ul className="space-y-2">
+              <h4 className="text-[10px] font-black text-[var(--secondary-color)] uppercase tracking-[0.3em] mb-8">Navigation</h4>
+              <ul className="space-y-4">
                 {navigation.filter(item => !item.protected).map((item) => (
                   <li key={item.name}>
                     <Link 
                       to={item.href} 
-                      className="text-gray-600 hover:text-gray-900 focus:outline-none focus:underline"
+                      className="text-sm font-bold text-white/40 hover:text-white transition-colors"
                     >
                       {item.name}
                     </Link>
@@ -311,30 +339,36 @@ const Layout = ({ children }) => {
             </div>
             
             <div>
-              <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Emergency Contacts</h4>
-              <ul className="space-y-2 text-gray-600">
-                <li className="flex items-center space-x-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
-                  <span>General Emergency: 112</span>
+              <h4 className="text-[10px] font-black text-[var(--secondary-color)] uppercase tracking-[0.3em] mb-8">Rapid Response</h4>
+              <ul className="space-y-4 font-bold text-sm">
+                <li className="flex items-center space-x-4 text-white hover:text-[var(--secondary-color)] transition-colors cursor-pointer">
+                  <div className="w-8 h-8 bg-red-500/10 rounded-lg flex items-center justify-center text-red-400">
+                    <AlertTriangle className="w-4 h-4" />
+                  </div>
+                  <span>Universal: 112</span>
                 </li>
-                <li className="flex items-center space-x-2">
-                  <Phone className="w-4 h-4 text-blue-500" />
-                  <span>Police: 100</span>
+                <li className="flex items-center space-x-4 text-white hover:text-[var(--secondary-color)] transition-colors cursor-pointer">
+                  <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-400">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <span>Police Ops: 100</span>
                 </li>
-                <li className="flex items-center space-x-2">
-                  <HelpCircle className="w-4 h-4 text-green-500" />
-                  <span>Ambulance: 108</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <Shield className="w-4 h-4 text-orange-500" />
-                  <span>Fire Department: 101</span>
+                <li className="flex items-center space-x-4 text-white hover:text-[var(--secondary-color)] transition-colors cursor-pointer">
+                  <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-400">
+                    <HeartPulse className="w-4 h-4" />
+                  </div>
+                  <span>Medical: 108</span>
                 </li>
               </ul>
             </div>
           </div>
           
-          <div className="mt-8 pt-8 border-t border-gray-200 text-center text-gray-500 text-sm">
-            <p>&copy; {new Date().getFullYear()} EmergencyConnect. All rights reserved.</p>
+          <div className="mt-20 pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
+            <p>&copy; {new Date().getFullYear()} EmergencyConnect Redesign. Crafted for Excellence.</p>
+            <div className="flex gap-8">
+              <span className="hover:text-white transition-colors cursor-pointer">Privacy Protocol</span>
+              <span className="hover:text-white transition-colors cursor-pointer">Network Status</span>
+            </div>
           </div>
         </div>
       </footer>

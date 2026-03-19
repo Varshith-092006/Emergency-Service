@@ -291,23 +291,23 @@ const AdminServices = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-8 sm:p-12 max-w-7xl mx-auto">
       {/* Header with improved styling */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Emergency Services Management</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Manage hospitals, police stations, and emergency services
-          </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16">
+        <div className="flex flex-col space-y-2">
+          <span className="text-[var(--secondary-color)] text-[10px] font-black uppercase tracking-[0.4em] mb-2 block">Management</span>
+          <h1 className="text-5xl font-black text-[var(--primary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>
+            Emergency <span className="not-italic text-[var(--text-color)]">Services</span>
+          </h1>
         </div>
         <button 
           onClick={() => setShowUpload(!showUpload)}
-          className="btn btn-primary btn-lg shadow-soft"
+          className="btn btn-primary px-10 py-5 text-sm flex items-center gap-3 active:scale-95 transition-all shadow-xl shadow-[var(--primary-color)]/20"
         >
           {showUpload ? (
             <>
               <X className="w-5 h-5" />
-              <span>Cancel Upload</span>
+              <span>Cancel</span>
             </>
           ) : (
             <>
@@ -319,24 +319,26 @@ const AdminServices = () => {
       </div>
 
       {/* Search and Upload Section */}
-      <div className="mb-8 space-y-4">
-        <div className="relative max-w-md card shadow-soft">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-            <Search className="w-5 h-5" />
+      <div className="mb-12 space-y-6">
+        <div className="relative max-w-2xl bg-white p-2 rounded-3xl border border-[var(--border-color)] shadow-sm">
+          <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-[var(--text-muted)]">
+            <Search className="w-5 h-5 opacity-40" />
           </div>
           <input
             type="text"
-            placeholder="Search services by name, type, or location..."
-            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            placeholder="Search network: hospitals, clinics, stations..."
+            className="w-full pl-14 pr-6 py-4 bg-transparent focus:outline-none text-sm font-medium"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
         {showUpload && (
-          <form onSubmit={handleUpload} className="card shadow-card dark:bg-gray-800 dark:border-gray-700">
-            <div className="card-header">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Bulk Upload Services</h3>
+          <form onSubmit={handleUpload} className="bg-white rounded-[2.5rem] border border-[var(--border-color)] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="p-10 border-b border-[var(--border-color)]">
+              <h3 className="text-2xl font-black text-[var(--primary-color)] italic" style={{ fontFamily: 'var(--font-serif)' }}>
+                Bulk Service <span className="not-italic text-[var(--text-color)]">Inclusion</span>
+              </h3>
             </div>
             
             <div className="card-body">
@@ -725,29 +727,25 @@ const AdminServices = () => {
                 ) : (
                   <div className="card-body">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white">{service.name}</h3>
-                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                          <span className="badge badge-primary">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-2xl font-black text-[var(--primary-color)] italic" style={{ fontFamily: 'var(--font-serif)' }}>{service.name}</h3>
+                          {service.isVerified && (
+                             <div className="bg-blue-500 text-white p-1 rounded-full"><CheckCircle className="w-3 h-3" /></div>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 mt-4">
+                          <span className="px-4 py-1.5 bg-[var(--primary-color)]/5 text-[var(--primary-color)] text-[10px] font-black uppercase tracking-widest rounded-full border border-[var(--primary-color)]/10">
                             {service.type}
                           </span>
-                          <span className="badge badge-secondary">
+                          <span className="px-4 py-1.5 bg-[var(--secondary-color)]/10 text-[var(--secondary-color)] text-[10px] font-black uppercase tracking-widest rounded-full border border-[var(--secondary-color)]/20">
                             {service.category}
                           </span>
-                          {service.isActive ? (
-                            <span className="badge badge-success">
-                              Active
-                            </span>
-                          ) : (
-                            <span className="badge badge-error">
-                              Inactive
-                            </span>
-                          )}
-                          {service.isVerified && (
-                            <span className="badge badge-primary">
-                              Verified
-                            </span>
-                          )}
+                          <span className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full ${
+                             service.isActive ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-500'
+                          }`}>
+                            {service.isActive ? 'Operational' : 'Inactive'}
+                          </span>
                         </div>
                       </div>
                       <div className="flex gap-2">

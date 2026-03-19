@@ -63,99 +63,91 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Settings</h1>
+    <div className="container mx-auto px-6 py-12 max-w-6xl">
+      <div className="flex flex-col space-y-2 mb-12">
+        <span className="text-[var(--secondary-color)] text-[10px] font-black uppercase tracking-[0.4em] mb-2 block">Control Center</span>
+        <h1 className="text-5xl font-black text-[var(--primary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>
+          Network <span className="not-italic text-[var(--text-color)]">Settings</span>
+        </h1>
+      </div>
       
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar Navigation */}
-        <div className="w-full md:w-64 space-y-2">
-          <button
-            onClick={() => setActiveSection('profile')}
-            className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 ${activeSection === 'profile' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
-          >
-            <User className="w-5 h-5" />
-            <span>Profile</span>
-          </button>
-          <button
-            onClick={() => setActiveSection('notifications')}
-            className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 ${activeSection === 'notifications' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
-          >
-            <Bell className="w-5 h-5" />
-            <span>Notifications</span>
-          </button>
-          <button
-            onClick={() => setActiveSection('security')}
-            className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 ${activeSection === 'security' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
-          >
-            <Shield className="w-5 h-5" />
-            <span>Security</span>
-          </button>
-          <button
-            onClick={() => setActiveSection('billing')}
-            className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 ${activeSection === 'billing' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
-          >
-            <CreditCard className="w-5 h-5" />
-            <span>Billing</span>
-          </button>
-          <button
-            onClick={() => setActiveSection('preferences')}
-            className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 ${activeSection === 'preferences' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}`}
-          >
-            <Globe className="w-5 h-5" />
-            <span>Preferences</span>
-          </button>
+        <div className="w-full md:w-72 space-y-3">
+          {[
+            { id: 'profile', icon: User, label: 'Profile' },
+            { id: 'notifications', icon: Bell, label: 'Notifications' },
+            { id: 'security', icon: Shield, label: 'Security' },
+            { id: 'billing', icon: CreditCard, label: 'Premium & Billing' },
+            { id: 'preferences', icon: Globe, label: 'Preferences' }
+          ].map(item => (
+            <button
+              key={item.id}
+              onClick={() => setActiveSection(item.id)}
+              className={`w-full text-left px-6 py-4 rounded-2xl flex items-center justify-between transition-all duration-300 group ${
+                activeSection === item.id 
+                ? 'bg-[var(--primary-color)] text-white shadow-xl scale-[1.02]' 
+                : 'bg-white text-[var(--text-muted)] hover:bg-[var(--surface-hover)] border border-[var(--border-color)]'
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <item.icon className={`w-5 h-5 ${activeSection === item.id ? 'text-[var(--secondary-color)]' : 'group-hover:text-[var(--primary-color)]'}`} />
+                <span className="font-bold text-sm tracking-tight">{item.label}</span>
+              </div>
+              {activeSection === item.id && <div className="w-1.5 h-1.5 rounded-full bg-[var(--secondary-color)] shadow- glow shadow-[var(--secondary-color)]"></div>}
+            </button>
+          ))}
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Main Content Area */}
+        <div className="flex-1 bg-white rounded-[2.5rem] p-8 sm:p-12 border border-[var(--border-color)] shadow-xl">
+          <form onSubmit={handleSubmit} className="space-y-10">
             {/* Profile Section */}
             {activeSection === 'profile' && (
               <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    Profile Information
+                <div className="flex justify-between items-center border-b border-[var(--border-color)] pb-6">
+                  <h2 className="text-3xl font-black text-[var(--primary-color)] italic" style={{ fontFamily: 'var(--font-serif)' }}>
+                    Personal <span className="not-italic text-[var(--text-color)]">Information</span>
                   </h2>
                   <button
                     type="button"
                     onClick={() => toggleSection('profile')}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="w-10 h-10 rounded-full bg-[var(--background-color)] flex items-center justify-center hover:bg-[var(--surface-hover)] transition-colors"
                   >
-                    {expandedSections.profile ? <ChevronUp /> : <ChevronDown />}
+                    {expandedSections.profile ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </button>
                 </div>
 
                 {expandedSections.profile && (
-                  <div className="space-y-4 pl-8">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <div className="space-y-6 pt-6">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-black text-[var(--text-color)] uppercase tracking-widest opacity-60 ml-1">Legal Name</label>
                       <input
                         type="text"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-5 py-4 bg-[var(--background-color)] border border-[var(--border-color)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 transition-all font-medium"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-black text-[var(--text-color)] uppercase tracking-widest opacity-60 ml-1">Email Identifier</label>
                       <input
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-5 py-4 bg-[var(--background-color)] border border-[var(--border-color)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 transition-all font-medium"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-black text-[var(--text-color)] uppercase tracking-widest opacity-60 ml-1">Emergency Contact Line</label>
                       <input
                         type="tel"
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-5 py-4 bg-[var(--background-color)] border border-[var(--border-color)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 transition-all font-medium"
                       />
                     </div>
                   </div>
@@ -410,14 +402,14 @@ const SettingsPage = () => {
               </div>
             )}
 
-            {/* Save Button (shown for all sections) */}
-            <div className="pt-6 border-t border-gray-200 flex justify-end">
+            {/* Save Action */}
+            <div className="pt-10 border-t border-[var(--border-color)] flex justify-end">
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center gap-2"
+                className="btn btn-primary px-12 py-5 text-sm"
               >
-                <Save className="w-4 h-4" />
-                Save Changes
+                <Save className="w-5 h-5 mr-3" />
+                Commit Settings
               </button>
             </div>
           </form>

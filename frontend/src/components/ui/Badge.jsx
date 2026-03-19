@@ -9,13 +9,13 @@ const Badge = ({
   ...props 
 }) => {
   // Color variants
-  const colorClasses = {
-    gray: 'bg-gray-100 text-gray-800',
-    red: 'bg-red-100 text-red-800',
-    yellow: 'bg-yellow-100 text-yellow-800',
-    green: 'bg-green-100 text-green-800',
-    blue: 'bg-blue-100 text-blue-800',
-    orange: 'bg-orange-100 text-orange-800',
+  const colorVariants = {
+    gray: 'bg-[var(--text-muted)]/10 text-[var(--text-muted)] border-[var(--text-muted)]/20',
+    red: 'bg-[var(--error-color)]/10 text-[var(--error-color)] border-[var(--error-color)]/20',
+    yellow: 'bg-[var(--warning-color)]/10 text-[var(--warning-color)] border-[var(--warning-color)]/20',
+    green: 'bg-[var(--success-color)]/10 text-[var(--success-color)] border-[var(--success-color)]/20',
+    blue: 'bg-[var(--primary-color)]/10 text-[var(--primary-color)] border-[var(--primary-color)]/20',
+    orange: 'bg-orange-500/10 text-orange-500 border-orange-500/20', // Custom for orange
   };
 
   // Size variants
@@ -26,8 +26,8 @@ const Badge = ({
 
   // Combine all classes
   const classes = [
-    'inline-flex items-center rounded-full font-medium',
-    colorClasses[color] || colorClasses.gray,
+    'inline-flex items-center rounded-lg font-bold border',
+    colorVariants[color] || colorVariants.gray,
     sizeClasses[size] || sizeClasses.default,
     className
   ].join(' ');

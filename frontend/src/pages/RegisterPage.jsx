@@ -31,85 +31,84 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-gray-50">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-md p-6 sm:p-8">
-          <div className="text-center mb-6 sm:mb-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
-            <p className="text-sm sm:text-base text-gray-600">Join our emergency services network</p>
+    <div className="min-h-screen flex items-center justify-center px-6 py-12 relative overflow-hidden bg-[var(--primary-color)]">
+      {/* Mesh Gradient Background */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[radial-gradient(circle,var(--secondary-color)_0%,transparent_70%)] opacity-20 blur-[100px]"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-[radial-gradient(circle,var(--primary-color)_0%,transparent_70%)] opacity-30 blur-[100px] brightness-150"></div>
+      </div>
+
+      <div className="w-full max-w-xl relative z-10">
+        <div className="bg-white rounded-[3rem] shadow-2xl p-10 sm:p-16 border border-[var(--border-color)]">
+          <div className="text-center mb-12">
+            <span className="text-[var(--secondary-color)] text-[10px] font-black uppercase tracking-[0.4em] mb-4 block">Join the Circle</span>
+            <h1 className="text-5xl font-black text-[var(--primary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>
+              Create <span className="not-italic text-[var(--text-color)]">Account</span>
+            </h1>
           </div>
 
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              </div>
+            <div className="mb-8 text-red-600 text-xs font-bold py-3 px-4 bg-red-50 rounded-xl border border-red-100 italic">
+              {error}
             </div>
           )}
 
-          <form className="space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 gap-6">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" />
                 </div>
                 <input
                   name="name"
                   type="text"
                   required
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full pl-14 pr-6 py-4 bg-[var(--background-color)] border border-[var(--border-color)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 focus:border-[var(--primary-color)] transition-all font-medium"
                   placeholder="Full Name"
                   value={formData.name}
                   onChange={handleChange}
                 />
               </div>
 
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" />
                 </div>
                 <input
                   name="email"
                   type="email"
                   required
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full pl-14 pr-6 py-4 bg-[var(--background-color)] border border-[var(--border-color)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 focus:border-[var(--primary-color)] transition-all font-medium"
                   placeholder="Email Address"
                   value={formData.email}
                   onChange={handleChange}
                 />
               </div>
 
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone className="h-5 w-5 text-gray-400" />
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                  <Phone className="h-5 w-5 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" />
                 </div>
                 <input
                   name="phone"
                   type="tel"
                   required
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full pl-14 pr-6 py-4 bg-[var(--background-color)] border border-[var(--border-color)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 focus:border-[var(--primary-color)] transition-all font-medium"
                   placeholder="Phone Number"
                   value={formData.phone}
                   onChange={handleChange}
                 />
               </div>
 
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-[var(--primary-color)] transition-colors" />
                 </div>
                 <input
                   name="password"
                   type="password"
                   required
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full pl-14 pr-6 py-4 bg-[var(--background-color)] border border-[var(--border-color)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 focus:border-[var(--primary-color)] transition-all font-medium"
                   placeholder="Password"
                   value={formData.password}
                   onChange={handleChange}
@@ -117,31 +116,31 @@ const RegisterPage = () => {
               </div>
             </div>
 
-            <div>
+            <div className="pt-4">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                className="btn btn-primary w-full py-5 text-sm"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="animate-spin mr-2 h-5 w-5" />
-                    Creating Account...
+                    <Loader2 className="animate-spin mr-3 h-5 w-5" />
+                    Initializing Account...
                   </>
                 ) : (
-                  'Register'
+                  'Complete Registration'
                 )}
               </button>
             </div>
           </form>
 
-          <div className="mt-6 sm:mt-8 text-center text-sm text-gray-600">
-            Already have an account?{' '}
+          <div className="mt-12 text-center text-sm font-medium text-[var(--text-muted)]">
+            Already part of the network?{' '}
             <Link 
               to="/login" 
-              className="font-medium text-blue-600 hover:text-blue-500 hover:underline"
+              className="text-[var(--primary-color)] font-black hover:text-[var(--secondary-color)] transition-colors underline decoration-2 underline-offset-4"
             >
-              Sign in
+              Sign In
             </Link>
           </div>
         </div>

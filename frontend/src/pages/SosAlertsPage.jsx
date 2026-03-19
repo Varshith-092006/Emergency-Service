@@ -149,25 +149,27 @@ const SosAlertsPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[var(--background-color)]">
       {/* Sidebar with alerts list */}
-      <div className="w-full md:w-96 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-xl font-bold flex items-center gap-2">
-              <AlertTriangle className="text-red-500" />
-              SOS Alerts
-              <Badge color="red" className="ml-2">
-                {alerts.length} Active
-              </Badge>
+      <div className="w-full md:w-96 bg-[var(--surface-color)] border-r border-[var(--border-color)] flex flex-col shadow-xl z-20 transition-all duration-300">
+        <div className="p-8 border-b border-[var(--border-color)]">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-black flex flex-col text-[var(--primary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>
+              <span className="not-italic text-[10px] font-black uppercase tracking-[0.4em] text-[var(--secondary-color)] mb-2">Security Console</span>
+              Alert <span className="not-italic">Matrix</span>
             </h1>
-            <button 
-              onClick={() => refetch()}
-              className="p-2 rounded-full hover:bg-gray-100"
-              disabled={isLoading}
-            >
-              <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1 bg-red-500 text-white text-[10px] font-black rounded-full animate-pulse-glow">
+                {alerts.length}
+              </span>
+              <button 
+                onClick={() => refetch()}
+                className="p-3 rounded-2xl text-[var(--text-muted)] hover:text-[var(--primary-color)] hover:bg-[var(--surface-hover)] transition-all border border-[var(--border-color)]"
+                disabled={isLoading}
+              >
+                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
           </div>
 
           {/* Filters */}
@@ -236,70 +238,66 @@ const SosAlertsPage = () => {
         </div>
 
         {/* Alerts list */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
           {isLoading ? (
-            <div className="flex justify-center items-center h-32">
-              <RefreshCw className="animate-spin w-8 h-8 text-blue-500" />
+            <div className="flex flex-col items-center justify-center h-48">
+              <div className="relative">
+                <RefreshCw className="animate-spin w-10 h-10 text-[var(--primary-color)]" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-[var(--primary-color)] rounded-full animate-pulse"></div>
+                </div>
+              </div>
+              <p className="mt-4 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Decoding Feed...</p>
             </div>
           ) : isError ? (
-            <div className="p-4 text-center text-red-500">
-              Failed to load alerts. <button onClick={refetch} className="text-blue-500">Try again</button>
+            <div className="p-8 text-center glass-panel m-4 rounded-2xl border border-red-500/20">
+              <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+              <p className="text-red-500 font-bold text-sm mb-3">Signal Interrupted</p>
+              <button onClick={() => refetch()} className="px-4 py-2 modern-gradient text-white text-xs font-bold rounded-xl active:scale-95 transition-all">Reconnect</button>
             </div>
           ) : alerts.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              No alerts found matching your filters
+            <div className="p-8 text-center text-[var(--text-muted)] font-medium opacity-50">
+              Zero active threats detected in this matrix.
             </div>
           ) : (
-            <ul className="divide-y divide-gray-200">
+            <ul className="divide-y divide-[var(--border-color)]">
               {alerts.map(alert => (
                 <li 
                   key={alert._id} 
-                  className={`p-4 hover:bg-gray-50 cursor-pointer ${selectedAlert?._id === alert._id ? 'bg-blue-50' : ''}`}
+                  className={`p-6 transition-all duration-300 cursor-pointer border-l-4 group active:scale-[0.98] ${selectedAlert?._id === alert._id ? 'bg-[var(--primary-color)]/10 border-l-[var(--primary-color)] shadow-inner' : 'hover:bg-[var(--surface-hover)] border-l-transparent'}`}
                   onClick={() => setSelectedAlert(alert)}
                 >
                   <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-[var(--background-color)] flex items-center justify-center text-lg border border-[var(--border-color)] group-hover:scale-110 transition-transform">
                           {alert.emergencyType === 'medical' ? '🏥' : 
                            alert.emergencyType === 'police' ? '🚓' : 
                            alert.emergencyType === 'fire' ? '🚒' : '⚠️'}
-                        </span>
-                        <h3 className="font-medium">{alert.user?.name || 'Anonymous'}</h3>
-                        <Badge 
-                          color={
-                            alert.status === 'pending' ? 'yellow' :
-                            alert.status === 'acknowledged' ? 'blue' :
-                            alert.status === 'responding' ? 'orange' : 'green'
-                          }
-                          size="sm"
-                        >
-                          {alert.status}
-                        </Badge>
+                        </div>
+                        <h3 className="font-bold text-[var(--text-color)] truncate text-lg tracking-tight">{alert.user?.name || 'Unknown Operator'}</h3>
                       </div>
-                      <div className="mt-1 flex items-center text-sm text-gray-500">
-                        <MapPin className="flex-shrink-0 w-4 h-4 mr-1" />
-                        <a 
-                          href={alert.location?.coordinates && alert.location.coordinates.length >= 2 ? `https://www.google.com/maps/search/?api=1&query=${alert.location.coordinates[1]},${alert.location.coordinates[0]}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(alert.location?.address || '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="truncate hover:text-blue-600 hover:underline cursor-pointer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {alert.location?.address || 'Unknown location'}
-                        </a>
+                      <div className="flex items-center gap-2 mb-3">
+                         <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest italic ${
+                            alert.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                            alert.status === 'acknowledged' ? 'bg-blue-100 text-blue-700' :
+                            alert.status === 'responding' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
+                         }`}>
+                            {alert.status} PROTOCOL
+                         </span>
+                      </div>
+                      <div className="flex items-center text-[10px] font-medium text-[var(--text-muted)] group-hover:text-[var(--primary-color)] transition-colors">
+                        <MapPin className="flex-shrink-0 w-3 h-3 mr-1.5" />
+                        <span className="truncate">
+                          {alert.location?.address || 'Geolocation Pending'}
+                        </span>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-400 flex items-center">
+                    <div className="text-[10px] font-black text-[var(--text-muted)] flex items-center uppercase tracking-widest opacity-60">
                       <Clock className="w-3 h-3 mr-1" />
                       {formatTimeSince(alert.createdAt)}
                     </div>
                   </div>
-                  {alert.description && (
-                    <p className="mt-2 text-sm text-gray-600 line-clamp-2">
-                      {alert.description}
-                    </p>
-                  )}
                 </li>
               ))}
             </ul>
@@ -308,12 +306,12 @@ const SosAlertsPage = () => {
       </div>
 
       {/* Main content with map and alert details */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Map view */}
-        <div className="h-1/2 border-b border-gray-200">
+        <div className="h-2/5 border-b border-[var(--border-color)] relative">
           <MapComponent 
             center={mapCenter}
-            zoom={selectedAlert ? 14 : 10}
+            zoom={selectedAlert ? 15 : 12}
             services={getAlertMarkerData()}
             showUserLocation={false}
             selectedService={selectedAlert ? {
@@ -328,146 +326,176 @@ const SosAlertsPage = () => {
             } : null}
             onServiceClick={setSelectedAlert}
           />
+          <div className="absolute top-6 right-6 z-[1000]">
+            <div className="glass-panel px-4 py-2 rounded-xl border border-[var(--border-color)] text-[10px] font-black uppercase tracking-widest text-[var(--text-color)] shadow-2xl">
+              Live Satellite Feed
+            </div>
+          </div>
         </div>
 
         {/* Alert details */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-[var(--background-color)]">
           {selectedAlert ? (
-            <div>
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold flex items-center gap-3">
-                    <span className="text-3xl">
-                      {selectedAlert.emergencyType === 'medical' ? '🏥' : 
-                       selectedAlert.emergencyType === 'police' ? '🚓' : 
-                       selectedAlert.emergencyType === 'fire' ? '🚒' : '⚠️'}
-                    </span>
-                    {selectedAlert.user?.name || 'Anonymous'}
-                  </h2>
-                  <div className="mt-1 flex items-center text-sm text-gray-500">
-                    <Badge 
-                      color={
-                        selectedAlert.status === 'pending' ? 'yellow' :
-                        selectedAlert.status === 'acknowledged' ? 'blue' :
-                        selectedAlert.status === 'responding' ? 'orange' : 'green'
-                      }
-                    >
-                      {selectedAlert.status}
-                    </Badge>
-                    <span className="mx-2">•</span>
-                    <Clock className="w-4 h-4 mr-1" />
-                    {new Date(selectedAlert.createdAt).toLocaleString()}
+            <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-500">
+              <div className="flex flex-col lg:flex-row justify-between items-start gap-6 mb-10 pb-8 border-b border-[var(--border-color)]">
+                <div className="flex items-start gap-6">
+                  <div className="w-20 h-20 rounded-3xl bg-[var(--primary-color)]/10 flex items-center justify-center text-4xl shadow-inner border border-[var(--primary-color)]/20">
+                    {selectedAlert.emergencyType === 'medical' ? '🏥' : 
+                     selectedAlert.emergencyType === 'police' ? '🚓' : 
+                     selectedAlert.emergencyType === 'fire' ? '🚒' : '⚠️'}
+                  </div>
+                  <div>
+                    <h2 className="text-4xl font-black text-[var(--text-color)] tracking-tighter uppercase mb-2">
+                      {selectedAlert.user?.name || 'Unidentified Civilian'}
+                    </h2>
+                    <div className="flex flex-wrap items-center gap-4">
+                      <Badge 
+                        color={
+                          selectedAlert.status === 'pending' ? 'yellow' :
+                          selectedAlert.status === 'acknowledged' ? 'blue' :
+                          selectedAlert.status === 'responding' ? 'orange' : 'green'
+                        }
+                        className="py-1 px-3 text-[10px] font-black italic uppercase tracking-widest"
+                      >
+                        {selectedAlert.status} Protocol
+                      </Badge>
+                      <div className="h-1 w-1 rounded-full bg-[var(--text-muted)] opacity-30"></div>
+                      <div className="flex items-center text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                        <Clock className="w-3.5 h-3.5 mr-2" />
+                        Transmitted: {new Date(selectedAlert.createdAt).toLocaleTimeString()}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <button
                     onClick={() => handleStatusChange(selectedAlert._id, 'acknowledged')}
                     disabled={selectedAlert.status !== 'pending' || updateStatusMutation.isLoading}
-                    className="px-4 py-2 border border-blue-500 text-blue-500 rounded-md hover:bg-blue-50 disabled:opacity-50"
+                    className="px-6 py-3 bg-[var(--primary-color)]/10 text-[var(--primary-color)] border border-[var(--primary-color)]/20 rounded-xl font-bold text-sm hover:bg-[var(--primary-color)] hover:text-white transition-all active:scale-95 disabled:opacity-50 uppercase tracking-widest"
                   >
                     Acknowledge
                   </button>
                   <button
                     onClick={() => handleStatusChange(selectedAlert._id, 'resolved')}
                     disabled={selectedAlert.status === 'resolved' || updateStatusMutation.isLoading}
-                    className="px-4 py-2 border border-green-500 text-green-500 rounded-md hover:bg-green-50 disabled:opacity-50"
+                    className="px-6 py-3 bg-green-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-green-500/20 hover:brightness-110 transition-all active:scale-95 disabled:opacity-50 uppercase tracking-widest"
                   >
-                    Mark Resolved
+                    Resolve Alert
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left column */}
-                <div className="space-y-6">
-                  <div className="bg-white p-4 rounded-lg shadow">
-                    <h3 className="font-medium flex items-center gap-2 mb-3">
-                      <MapPin className="w-5 h-5" />
-                      Location Details
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left side info */}
+                <div className="lg:col-span-2 space-y-8">
+                  <div className="glass-panel p-8 rounded-3xl border border-[var(--border-color)]">
+                    <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                      <div className="p-1.5 bg-[var(--primary-color)]/10 rounded-lg">
+                        <MapPin className="text-[var(--primary-color)] w-4 h-4" />
+                      </div>
+                      Deployment Coordinates
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                         <a 
                           href={selectedAlert.location?.coordinates && selectedAlert.location.coordinates.length >= 2 ? `https://www.google.com/maps/search/?api=1&query=${selectedAlert.location.coordinates[1]},${selectedAlert.location.coordinates[0]}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedAlert.location?.address || '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="hover:text-blue-600 hover:underline cursor-pointer block"
+                          className="text-2xl font-bold text-[var(--text-color)] hover:text-[var(--primary-color)] transition-colors leading-tight block"
                         >
-                          {selectedAlert.location?.address || 'No address provided'}
+                          {selectedAlert.location?.address || 'Geolocation Pending...'}
                         </a>
-                      <p className="text-sm text-gray-500">
-                        Coordinates: {selectedAlert.location?.coordinates?.[1]?.toFixed(6)} (lat), 
-                        {selectedAlert.location?.coordinates?.[0]?.toFixed(6)} (lng)
-                      </p>
-                      {selectedAlert.location?.accuracy && (
-                        <p className="text-sm text-gray-500">
-                          Accuracy: ±{selectedAlert.location.accuracy} meters
-                        </p>
-                      )}
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-[var(--border-color)]">
+                        <div>
+                          <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">LATITUDE</p>
+                          <p className="font-mono text-[var(--text-color)] text-sm">{selectedAlert.location?.coordinates?.[1]?.toFixed(6)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">LONGITUDE</p>
+                          <p className="font-mono text-[var(--text-color)] text-sm">{selectedAlert.location?.coordinates?.[0]?.toFixed(6)}</p>
+                        </div>
+                        {selectedAlert.location?.accuracy && (
+                          <div>
+                            <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">ACCURACY</p>
+                            <p className="font-mono text-[var(--text-color)] text-sm">±{selectedAlert.location.accuracy}m</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="bg-white p-4 rounded-lg shadow">
-                    <h3 className="font-medium flex items-center gap-2 mb-3">
-                      <User className="w-5 h-5" />
-                      User Information
+                  <div className="glass-panel p-8 rounded-3xl border border-[var(--border-color)]">
+                    <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                      <div className="p-1.5 bg-amber-500/10 rounded-lg">
+                        <AlertTriangle className="text-amber-500 w-4 h-4" />
+                      </div>
+                      Incident Brief
                     </h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-gray-500" />
-                        <span>{selectedAlert.user?.phone || 'Not provided'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-gray-500" />
-                        <span>{selectedAlert.user?.email || 'Not provided'}</span>
-                      </div>
+                    <div className="bg-[var(--background-color)] p-6 rounded-2xl border border-[var(--border-color)] shadow-inner">
+                      <p className="text-[var(--text-color)] font-medium leading-relaxed whitespace-pre-wrap italic opacity-90">
+                        {selectedAlert.description ? `"${selectedAlert.description}"` : "No descriptive intel provided by operator."}
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Right column */}
-                <div className="space-y-6">
-                  <div className="bg-white p-4 rounded-lg shadow">
-                    <h3 className="font-medium flex items-center gap-2 mb-3">
-                      <AlertTriangle className="w-5 h-5" />
-                      Emergency Details
-                    </h3>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">Emergency Type</h4>
-                        <p className="capitalize">{selectedAlert.emergencyType}</p>
+                {/* Right side info */}
+                <div className="space-y-8">
+                  <div className="glass-panel p-8 rounded-3xl border border-[var(--border-color)]">
+                    <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                      <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                        <User className="text-blue-500 w-4 h-4" />
                       </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500">Description</h4>
-                        <p className="whitespace-pre-wrap">
-                          {selectedAlert.description || 'No description provided'}
-                        </p>
+                      Subject Intel
+                    </h3>
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-4 group">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--background-color)] border border-[var(--border-color)] flex items-center justify-center group-hover:border-[var(--primary-color)]/50 transition-colors">
+                          <Phone className="w-4 h-4 text-[var(--primary-color)]" />
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest">COMMS CHANNEL</p>
+                          <a href={`tel:${selectedAlert.user?.phone}`} className="font-bold text-[var(--text-color)] hover:underline">{selectedAlert.user?.phone || 'OFFLINE'}</a>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 group">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--background-color)] border border-[var(--border-color)] flex items-center justify-center group-hover:border-blue-500/50 transition-colors">
+                          <Mail className="w-4 h-4 text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest">DIGITAL SIGNATURE</p>
+                          <p className="font-bold text-[var(--text-color)] truncate max-w-[150px]">{selectedAlert.user?.email || 'UNREGISTERED'}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {selectedAlert.contactedServices?.length > 0 && (
-                    <div className="bg-white p-4 rounded-lg shadow">
-                      <h3 className="font-medium flex items-center gap-2 mb-3">
-                        <Shield className="w-5 h-5" />
-                        Contacted Services
+                    <div className="glass-panel p-8 rounded-3xl border border-[var(--border-color)]">
+                      <h3 className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                        <div className="p-1.5 bg-green-500/10 rounded-lg">
+                          <Shield className="text-green-500 w-4 h-4" />
+                        </div>
+                        Active Responders
                       </h3>
-                      <ul className="space-y-3">
+                      <ul className="space-y-6">
                         {selectedAlert.contactedServices.map((service, index) => (
-                          <li key={index} className="flex items-center gap-3">
-                            <div className="flex-shrink-0">
-                              {service.service?.type === 'hospital' ? '🏥' : 
-                               service.service?.type === 'police' ? '🚓' : 
-                               service.service?.type === 'fire' ? '🚒' : '🏢'}
+                          <li key={index} className="flex flex-col gap-2">
+                            <div className="flex items-center gap-3">
+                              <div className="text-xl">
+                                {service.service?.type === 'hospital' ? '🏥' : 
+                                 service.service?.type === 'police' ? '🚓' : 
+                                 service.service?.type === 'fire' ? '🚒' : '🏢'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-[var(--text-color)] truncate text-sm">{service.service?.name}</p>
+                                <p className="text-[10px] text-[var(--text-muted)] font-medium">
+                                  {service.service?.contact?.phone || 'No direct comms'}
+                                </p>
+                              </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate">{service.service?.name || 'Unknown service'}</p>
-                              <p className="text-sm text-gray-500 truncate">
-                                {service.service?.contact?.phone || 'No contact'}
-                              </p>
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {service.response || 'No response'}
+                            <div className="mt-1 px-3 py-1.5 bg-[var(--background-color)] rounded-lg border border-[var(--border-color)] text-[10px] font-bold text-[var(--primary-color)] italic">
+                              {service.response || 'Awaiting response...'}
                             </div>
                           </li>
                         ))}
@@ -478,9 +506,13 @@ const SosAlertsPage = () => {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <AlertTriangle className="w-12 h-12 mb-4" />
-              <p className="text-lg">Select an alert to view details</p>
+            <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)] opacity-30 select-none">
+              <div className="relative mb-8">
+                <AlertTriangle className="w-24 h-24" />
+                <div className="absolute inset-0 bg-red-500/20 blur-3xl rounded-full"></div>
+              </div>
+              <p className="text-2xl font-black uppercase tracking-[0.3em]">System Idling</p>
+              <p className="text-sm font-bold mt-2">SELECT INCIDENT NODE FOR FULL SPECTRUM ANALYSIS</p>
             </div>
           )}
         </div>

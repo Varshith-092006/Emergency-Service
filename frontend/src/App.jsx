@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { SocketProvider } from './contexts/SocketContext.jsx';
 import { LocationProvider } from './contexts/LocationContext.jsx';
+import { ThemeProvider } from './contexts/ThemeContext.jsx';
 
 // Layout Components
 import Layout from './components/layout/Layout';
@@ -125,43 +126,45 @@ function App() {
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <SocketProvider>
-            <LocationProvider>
-              <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                <div className="App min-h-screen bg-gray-50">
-                  <Layout>
-                    <AppRoutes />
-                  </Layout>
-                  
-                  {/* Global Toast Notifications */}
-                  <Toaster
-                    position="top-right"
-                    toastOptions={{
-                      duration: 4000,
-                      style: {
-                        background: '#363636',
-                        color: '#fff',
-                      },
-                      success: {
-                        duration: 3000,
-                        iconTheme: {
-                          primary: '#22c55e',
-                          secondary: '#fff',
+          <ThemeProvider>
+            <SocketProvider>
+              <LocationProvider>
+                <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                  <div className="App min-h-screen text-slate-900 dark:text-slate-100 transition-colors duration-300">
+                    <Layout>
+                      <AppRoutes />
+                    </Layout>
+                    
+                    {/* Global Toast Notifications */}
+                    <Toaster
+                      position="top-right"
+                      toastOptions={{
+                        duration: 4000,
+                        style: {
+                          background: '#363636',
+                          color: '#fff',
                         },
-                      },
-                      error: {
-                        duration: 5000,
-                        iconTheme: {
-                          primary: '#ef4444',
-                          secondary: '#fff',
+                        success: {
+                          duration: 3000,
+                          iconTheme: {
+                            primary: '#22c55e',
+                            secondary: '#fff',
+                          },
                         },
-                      },
-                    }}
-                  />
-                </div>
-              </Router>
-            </LocationProvider>
-          </SocketProvider>
+                        error: {
+                          duration: 5000,
+                          iconTheme: {
+                            primary: '#ef4444',
+                            secondary: '#fff',
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                </Router>
+              </LocationProvider>
+            </SocketProvider>
+          </ThemeProvider>
         </AuthProvider>
       </QueryClientProvider>
     </HelmetProvider>

@@ -100,26 +100,43 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Admin Dashboard</h1>
+    <div className="p-8 sm:p-12 max-w-7xl mx-auto">
+      <div className="flex flex-col space-y-2 mb-12">
+        <span className="text-[var(--secondary-color)] text-[10px] font-black uppercase tracking-[0.4em] mb-2 block">Executive Overview</span>
+        <h1 className="text-5xl font-black text-[var(--primary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>
+          System <span className="not-italic text-[var(--text-color)]">Dashboard</span>
+        </h1>
+      </div>
       
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-          <h3 className="text-gray-500 text-sm font-medium">Total Services</h3>
-          <p className="text-3xl font-bold text-gray-800">{overview?.totalServices || 0}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+        <div className="bg-white rounded-[2rem] border border-[var(--border-color)] p-8 shadow-sm hover:shadow-xl transition-all group">
+          <h3 className="text-[var(--text-muted)] text-xs font-black uppercase tracking-widest mb-4 opacity-60">Total Services</h3>
+          <p className="text-5xl font-black text-[var(--primary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>{overview?.totalServices || 0}</p>
+          <div className="mt-6 w-full h-1 bg-[var(--background-color)] rounded-full overflow-hidden">
+            <div className="h-full bg-[var(--primary-color)] w-3/4"></div>
+          </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-          <h3 className="text-gray-500 text-sm font-medium">Total Users</h3>
-          <p className="text-3xl font-bold text-gray-800">{overview?.totalUsers || 0}</p>
+        <div className="bg-white rounded-[2rem] border border-[var(--border-color)] p-8 shadow-sm hover:shadow-xl transition-all group">
+          <h3 className="text-[var(--text-muted)] text-xs font-black uppercase tracking-widest mb-4 opacity-60">Total Users</h3>
+          <p className="text-5xl font-black text-[var(--primary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>{overview?.totalUsers || 0}</p>
+          <div className="mt-6 w-full h-1 bg-[var(--background-color)] rounded-full overflow-hidden">
+            <div className="h-full bg-[var(--secondary-color)] w-1/2"></div>
+          </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-          <h3 className="text-gray-500 text-sm font-medium">Total SOS Alerts</h3>
-          <p className="text-3xl font-bold text-gray-800">{overview?.totalSos || 0}</p>
+        <div className="bg-white rounded-[2rem] border border-[var(--border-color)] p-8 shadow-sm hover:shadow-xl transition-all group">
+          <h3 className="text-[var(--text-muted)] text-xs font-black uppercase tracking-widest mb-4 opacity-60">Total SOS</h3>
+          <p className="text-5xl font-black text-red-600 tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>{overview?.totalSos || 0}</p>
+          <div className="mt-6 w-full h-1 bg-red-50 rounded-full overflow-hidden">
+            <div className="h-full bg-red-500 w-1/4 animate-pulse"></div>
+          </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
-          <h3 className="text-gray-500 text-sm font-medium">Active SOS</h3>
-          <p className="text-3xl font-bold text-gray-800">{overview?.activeSos || 0}</p>
+        <div className="bg-[var(--primary-color)] rounded-[2rem] p-8 shadow-xl group">
+          <h3 className="text-white/60 text-xs font-black uppercase tracking-widest mb-4">Active Alerts</h3>
+          <p className="text-5xl font-black text-[var(--secondary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>{overview?.activeSos || 0}</p>
+          <div className="mt-6 w-full h-1 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-full bg-[var(--secondary-color)] w-full shadow-[0_0_10px_rgba(255,138,80,0.5)]"></div>
+          </div>
         </div>
       </div>
 
@@ -197,40 +214,50 @@ const AdminDashboard = () => {
 
       {/* Recent Alerts Table */}
       {recentAlerts.length > 0 && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-800">Recent SOS Alerts</h3>
+        <div className="bg-white rounded-[2.5rem] border border-[var(--border-color)] shadow-2xl overflow-hidden">
+          <div className="p-10 border-b border-[var(--border-color)]">
+            <h3 className="text-2xl font-black text-[var(--primary-color)] italic" style={{ fontFamily: 'var(--font-serif)' }}>
+              Recent SOS <span className="not-italic text-[var(--text-color)]">Alerts</span>
+            </h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full">
+              <thead className="bg-[var(--background-color)]">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-10 py-5 text-left text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">Contact</th>
+                  <th className="px-10 py-5 text-left text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">Emergency</th>
+                  <th className="px-10 py-5 text-left text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">Origin</th>
+                  <th className="px-10 py-5 text-left text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">Timestamp</th>
+                  <th className="px-10 py-5 text-left text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em]">Status</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-[var(--border-color)]">
                 {recentAlerts.map((alert) => (
-                  <tr key={alert._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {alert.user?.name || 'Anonymous'}
+                  <tr key={alert._id} className="hover:bg-[var(--surface-hover)] transition-colors group">
+                    <td className="px-10 py-8 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-[var(--primary-color)]/5 flex items-center justify-center text-[var(--primary-color)] font-bold mr-4 border border-[var(--primary-color)]/10">
+                          {alert.user?.name?.charAt(0) || 'A'}
+                        </div>
+                        <span className="text-sm font-bold text-[var(--text-color)]">{alert.user?.name || 'Anonymous'}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                      {alert.emergencyType?.toLowerCase() || 'Unknown'}
+                    <td className="px-10 py-8 whitespace-nowrap">
+                      <span className="text-sm font-medium text-[var(--text-muted)] capitalize">{alert.emergencyType?.toLowerCase() || 'General'}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {alert.location?.address || 'Unknown'}
+                    <td className="px-10 py-8 whitespace-nowrap">
+                      <div className="flex items-center text-sm text-[var(--text-muted)] font-medium max-w-xs truncate">
+                        <MapPin className="w-4 h-4 mr-2 text-[var(--secondary-color)] opacity-50" />
+                        {alert.location?.address || 'Geolocation Link'}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(alert.createdAt).toLocaleString()}
+                    <td className="px-10 py-8 whitespace-nowrap text-sm text-[var(--text-muted)] font-medium">
+                      {new Date(alert.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    <td className="px-10 py-8 whitespace-nowrap">
+                      <span className={`px-4 py-1.5 inline-flex text-[10px] font-black tracking-widest uppercase rounded-full ${
                         alert.status === 'active' 
-                          ? 'bg-red-100 text-red-800' 
+                          ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' 
                           : 'bg-green-100 text-green-800'
                       }`}>
                         {alert.status}

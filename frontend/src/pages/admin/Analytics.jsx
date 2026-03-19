@@ -97,43 +97,58 @@ const AdminAnalytics = () => {
     datasets: [{
       label: 'Average Response Time (minutes)',
       data: responseTimes.map((r) => r.time),
-      borderColor: '#3b82f6',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      borderWidth: 2,
-      tension: 0.3,
-      fill: true
+      borderColor: '#FF8A50',
+      backgroundColor: 'rgba(255, 138, 80, 0.1)',
+      borderWidth: 4,
+      tension: 0.4,
+      fill: true,
+      pointBackgroundColor: '#3D2C4D',
+      pointBorderColor: '#FF8A50',
+      pointRadius: 6,
+      pointHoverRadius: 8
     }]
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Emergency Services Analytics</h1>
+    <div className="p-8 sm:p-12 max-w-7xl mx-auto">
+      <div className="flex flex-col space-y-2 mb-12">
+        <span className="text-[var(--secondary-color)] text-[10px] font-black uppercase tracking-[0.4em] mb-2 block">Data Insights</span>
+        <h1 className="text-5xl font-black text-[var(--primary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>
+          System <span className="not-italic text-[var(--text-color)]">Analytics</span>
+        </h1>
+      </div>
       
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-          <div className="flex items-center gap-3">
-            <Activity className="w-6 h-6 text-red-500" />
-            <h3 className="text-gray-500 text-sm font-medium">Active Alerts</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div className="bg-white rounded-[2rem] border border-[var(--border-color)] p-8 shadow-sm hover:shadow-xl transition-all group">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center text-red-600">
+              <Activity className="w-6 h-6" />
+            </div>
+            <h3 className="text-[var(--text-muted)] text-[10px] font-black uppercase tracking-[0.2em]">Active Alerts</h3>
           </div>
-          <p className="text-3xl font-bold text-gray-800 mt-2">{activeAlerts || 0}</p>
+          <p className="text-5xl font-black text-red-600 tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>{activeAlerts || 0}</p>
         </div>
         
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-          <div className="flex items-center gap-3">
-            <MapPin className="w-6 h-6 text-green-500" />
-            <h3 className="text-gray-500 text-sm font-medium">Resolved Alerts</h3>
+        <div className="bg-white rounded-[2rem] border border-[var(--border-color)] p-8 shadow-sm hover:shadow-xl transition-all group">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center text-green-600">
+              <MapPin className="w-6 h-6" />
+            </div>
+            <h3 className="text-[var(--text-muted)] text-[10px] font-black uppercase tracking-[0.2em]">Resolved Alerts</h3>
           </div>
-          <p className="text-3xl font-bold text-gray-800 mt-2">{resolvedAlerts || 0}</p>
+          <p className="text-5xl font-black text-green-600 tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>{resolvedAlerts || 0}</p>
         </div>
         
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-          <div className="flex items-center gap-3">
-            <Clock className="w-6 h-6 text-blue-500" />
-            <h3 className="text-gray-500 text-sm font-medium">Avg Response Time</h3>
+        <div className="bg-[var(--primary-color)] rounded-[2rem] p-8 shadow-xl group">
+          <div className="flex items-center gap-4 mb-6 text-white/60">
+            <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-[var(--secondary-color)]">
+              <Clock className="w-6 h-6" />
+            </div>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">Avg Response</h3>
           </div>
-          <p className="text-3xl font-bold text-gray-800 mt-2">
-            {averageResponseTime ? `${averageResponseTime} mins` : 'N/A'}
+          <p className="text-5xl font-black text-[var(--secondary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>
+            {averageResponseTime ? `${averageResponseTime}m` : 'N/A'}
           </p>
         </div>
       </div>

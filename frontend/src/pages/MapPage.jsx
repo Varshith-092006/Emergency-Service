@@ -163,8 +163,8 @@ const MapPage = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-gray-50">
-      <Sidebar
+    <div className="flex h-[calc(100vh-64px)] bg-[var(--background-color)]">
+    <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         serviceTypes={SERVICE_TYPES}
@@ -177,82 +177,84 @@ const MapPage = () => {
       />
 
       <div className="flex-1 flex flex-col relative">
-        <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-white shadow-sm z-30">
-          <div className="flex items-center gap-2 sm:gap-4">
+        <header className="flex items-center justify-between px-4 sm:px-8 py-4 bg-[var(--surface-color)]/80 backdrop-blur-md border-b border-[var(--border-color)] z-30 shadow-sm">
+          <div className="flex items-center gap-4">
             <button 
-              className="lg:hidden p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="lg:hidden p-2 rounded-xl text-[var(--text-color)] hover:bg-[var(--surface-hover)] transition-colors focus:outline-none"
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label="Toggle sidebar"
             >
               <Menu className="w-6 h-6" />
             </button>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
-              Emergency Services Map
-            </h1>
-            <div className="hidden sm:flex items-center ml-4 text-sm text-gray-600">
-              <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-              <span className="truncate max-w-xs">
-                {isLoadingLocation ? 'Locating...' : 
-                 address || 
-                 (currentLocation ? 'Address not available' : 'Location services disabled')}
-              </span>
-              {currentLocation && (
-                <button 
-                  onClick={handleRefreshLocation}
-                  className="ml-2 p-1 rounded hover:bg-gray-100"
-                  title="Refresh location"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              )}
+            <div className="flex flex-col">
+              <h1 className="text-2xl sm:text-3xl font-black text-[var(--primary-color)] tracking-tighter uppercase italic" style={{ fontFamily: 'var(--font-serif)' }}>
+                Service <span className="not-italic text-[var(--text-color)]">Locator</span>
+              </h1>
+              <div className="hidden sm:flex items-center text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-0.5">
+                <MapPin className="w-3 h-3 mr-1.5 text-[var(--primary-color)]" />
+                <span className="truncate max-w-[200px]">
+                  {isLoadingLocation ? 'Synchronizing Coordinates...' : 
+                   address || 
+                   (currentLocation ? 'Coordinate Established' : 'GPS Signal Lost')}
+                </span>
+                {currentLocation && (
+                  <button 
+                    onClick={handleRefreshLocation}
+                    className="ml-2 p-1 rounded-md hover:bg-[var(--surface-hover)] transition-colors text-[var(--primary-color)]"
+                    title="Recalibrate"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <button
-            className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-1 sm:py-2 rounded-lg font-bold shadow-md flex items-center gap-2 animate-pulse-glow focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="btn btn-primary animate-pulse-glow"
             onClick={handleSOS}
-            aria-label="Send emergency SOS"
+            aria-label="Request Emergency Assistance"
           >
-            <AlertTriangle className="w-5 h-5" />
-            <span className="hidden sm:inline">Emergency SOS</span>
+            <AlertTriangle className="w-4 h-4 mr-2" />
+            <span>Request SOS</span>
           </button>
         </header>
 
-        <div className="fixed bottom-6 right-6 z-[1000] flex flex-col items-end gap-3">
+        <div className="fixed bottom-8 right-8 z-[1000] flex flex-col items-end gap-4">
           {controlsOpen && (
-            <div className="bg-white/90 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg flex flex-col gap-3">
+            <div className="glass-panel p-5 rounded-2xl shadow-2xl flex flex-col gap-4 border border-[var(--border-color)] animate-in fade-in slide-in-from-bottom-4 duration-300">
               <button
                 onClick={handleRefreshLocation}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-medium shadow disabled:opacity-50"
+                className="flex items-center justify-center gap-3 bg-[var(--surface-color)] border border-[var(--border-color)] text-[var(--text-color)] rounded-xl px-5 py-3 text-sm font-bold shadow-sm hover:bg-[var(--surface-hover)] transition-all disabled:opacity-50 active:scale-95"
                 disabled={isLoadingLocation}
               >
-                <Crosshair className="w-4 h-4" />
-                Refresh Location
+                <Crosshair className="w-4 h-4 text-[var(--primary-color)]" />
+                Recalibrate GPS
               </button>
 
               <button
                 onClick={() => setShowDangerZones(!showDangerZones)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium shadow ${
+                className={`flex items-center justify-center gap-3 px-5 py-3 rounded-xl text-sm font-bold shadow-lg transition-all active:scale-95 ${
                   showDangerZones
-                    ? 'bg-red-600 hover:bg-red-700 text-white'
-                    : 'border border-red-600 text-red-600 hover:bg-red-50'
+                    ? 'bg-red-500 text-white shadow-red-500/20'
+                    : 'bg-[var(--surface-color)] border border-red-500/30 text-red-500'
                 }`}
               >
                 <AlertTriangle className="w-4 h-4" />
-                {showDangerZones ? 'Hide' : 'Show'} Danger Zones
+                {showDangerZones ? 'Deactivate' : 'Activate'} Danger Zones
               </button>
 
-              <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 shadow text-sm">
-                <label htmlFor="radius-select" className="font-medium">
-                  Radius:
+              <div className="flex items-center justify-between gap-4 bg-[var(--background-color)] border border-[var(--border-color)] rounded-xl px-4 py-3 shadow-inner text-sm">
+                <label htmlFor="radius-select" className="font-bold text-[var(--text-muted)] uppercase tracking-widest text-[10px]">
+                  Scanning Radius:
                 </label>
                 <select
                   id="radius-select"
                   value={radius}
                   onChange={(e) => setRadius(Number(e.target.value))}
-                  className="px-2 py-1 rounded-md border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white"
+                  className="bg-transparent text-[var(--text-color)] font-bold focus:outline-none cursor-pointer"
                 >
                   {RADIUS_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
+                    <option key={option} value={option} className="bg-[var(--surface-color)]">
                       {option} km
                     </option>
                   ))}
@@ -263,10 +265,10 @@ const MapPage = () => {
 
           <button
             onClick={() => setControlsOpen(!controlsOpen)}
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-            aria-label={controlsOpen ? 'Hide controls' : 'Show controls'}
+            className="w-14 h-14 bg-[var(--primary-color)] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 transition-all duration-300"
+            aria-label={controlsOpen ? 'Collapse Data Controls' : 'Expand Data Controls'}
           >
-            <Sliders className="w-5 h-5" />
+            <Sliders className={`w-6 h-6 transition-transform duration-500 ${controlsOpen ? 'rotate-180' : 'rotate-0'}`} />
           </button>
         </div>
 

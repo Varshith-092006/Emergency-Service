@@ -10,8 +10,8 @@ const ProfilePage = () => {
   const [contact, setContact] = useState({ name: '', phone: '', relationship: 'family' });
 
   if (!user) return (
-    <div className="flex justify-center items-center h-screen">
-      <Loader2 className="animate-spin w-8 h-8 text-blue-600" />
+    <div className="flex justify-center items-center h-screen bg-[var(--background-color)]">
+      <Loader2 className="animate-spin w-10 h-10 text-[var(--primary-color)]" />
     </div>
   );
 
@@ -48,73 +48,75 @@ const ProfilePage = () => {
   return (
     <div className="max-w-3xl mx-auto p-4 sm:p-6">
       {/* Profile Section */}
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
-        <div className="flex items-center gap-3 mb-6">
-          <User className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-800">My Profile</h2>
+      <div className="bg-white rounded-[2.5rem] shadow-xl p-8 sm:p-12 mb-10 border border-[var(--border-color)]">
+        <div className="flex items-center gap-6 mb-10">
+          <div className="w-16 h-16 rounded-3xl bg-[var(--primary-color)]/5 flex items-center justify-center border border-[var(--primary-color)]/10">
+            <User className="w-8 h-8 text-[var(--primary-color)]" />
+          </div>
+          <h2 className="text-3xl font-black text-[var(--primary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>Identity & <span className="not-italic text-[var(--text-color)]">Profile</span></h2>
           {!editMode && (
             <button
               onClick={() => setEditMode(true)}
-              className="ml-auto flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+              className="ml-auto btn btn-primary"
             >
-              <Edit className="w-4 h-4" /> Edit Profile
+              <Edit className="w-4 h-4 mr-2" /> Edit Profile
             </button>
           )}
         </div>
 
-        <form onSubmit={handleProfileSave} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+        <form onSubmit={handleProfileSave} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-[var(--text-color)] opacity-80 uppercase tracking-wider ml-1">Full Name</label>
               <input
                 name="name"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-[var(--background-color)] border border-[var(--border-color)] rounded-xl text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 focus:border-[var(--primary-color)] transition-all disabled:opacity-50"
                 value={profile.name || ''}
                 onChange={handleProfileChange}
                 disabled={!editMode}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-[var(--text-color)] opacity-80 uppercase tracking-wider ml-1">Contact Number</label>
               <input
                 name="phone"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-[var(--background-color)] border border-[var(--border-color)] rounded-xl text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 focus:border-[var(--primary-color)] transition-all disabled:opacity-50"
                 value={profile.phone || ''}
                 onChange={handleProfileChange}
                 disabled={!editMode}
               />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <div className="space-y-2">
+            <label className="block text-sm font-bold text-[var(--text-color)] opacity-80 uppercase tracking-wider ml-1">Email Address</label>
             <input
               name="email"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
+              className="w-full px-4 py-3 bg-[var(--surface-hover)] border border-[var(--border-color)] rounded-xl text-[var(--text-muted)] cursor-not-allowed"
               value={profile.email || ''}
               disabled
               readOnly
             />
           </div>
           {editMode && (
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-3 pt-4">
               <button
                 type="button"
                 onClick={() => setEditMode(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-6 py-3 border border-[var(--border-color)] rounded-xl text-[var(--text-color)] font-bold hover:bg-[var(--surface-hover)] transition-all"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center gap-2"
+                className="px-8 py-3 modern-gradient text-white font-bold rounded-xl shadow-lg flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all"
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <Loader2 className="animate-spin w-4 h-4" />
+                  <Loader2 className="animate-spin w-5 h-5" />
                 ) : (
-                  <Save className="w-4 h-4" />
+                  <Save className="w-5 h-5" />
                 )}
-                Save Changes
+                Commit Changes
               </button>
             </div>
           )}
@@ -122,36 +124,38 @@ const ProfilePage = () => {
       </div>
 
       {/* Emergency Contacts Section */}
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Phone className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-800">Emergency Contacts</h2>
+      <div className="bg-white rounded-[2.5rem] shadow-xl p-8 sm:p-12 mb-10 border border-[var(--border-color)]">
+        <div className="flex items-center gap-6 mb-10">
+          <div className="w-16 h-16 rounded-3xl bg-red-500/5 flex items-center justify-center border border-red-500/10">
+            <Phone className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-3xl font-black text-[var(--primary-color)] tracking-tighter italic" style={{ fontFamily: 'var(--font-serif)' }}>Emergency <span className="not-italic text-[var(--text-color)]">Contacts</span></h2>
         </div>
 
-        <form onSubmit={handleAddContact} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-          <div>
+        <form onSubmit={handleAddContact} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+          <div className="md:col-span-1">
             <input
               type="text"
-              placeholder="Name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Full Name"
+              className="w-full px-4 py-3 bg-[var(--background-color)] border border-[var(--border-color)] rounded-xl text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 transition-all font-medium"
               value={contact.name}
               onChange={e => setContact({ ...contact, name: e.target.value })}
               required
             />
           </div>
-          <div>
+          <div className="md:col-span-1">
             <input
               type="tel"
-              placeholder="Phone"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Phone Number"
+              className="w-full px-4 py-3 bg-[var(--background-color)] border border-[var(--border-color)] rounded-xl text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 transition-all font-medium"
               value={contact.phone}
               onChange={e => setContact({ ...contact, phone: e.target.value })}
               required
             />
           </div>
-          <div>
+          <div className="md:col-span-1">
             <select
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-[var(--background-color)] border border-[var(--border-color)] rounded-xl text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 transition-all font-medium cursor-pointer"
               value={contact.relationship}
               onChange={e => setContact({ ...contact, relationship: e.target.value })}
             >
@@ -163,69 +167,73 @@ const ProfilePage = () => {
           </div>
           <button
             type="submit"
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center justify-center gap-2"
+            className="btn btn-primary"
             disabled={isLoading}
           >
-            <Plus className="w-4 h-4" /> Add Contact
+            <Plus className="w-4 h-4 mr-2" /> Add
           </button>
         </form>
 
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {user.emergencyContacts?.length > 0 ? (
             user.emergencyContacts.map((c) => (
-              <li key={c._id} className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center gap-4">
-                  <div className="bg-blue-100 p-2 rounded-full">
-                    <Phone className="w-5 h-5 text-blue-600" />
+              <li key={c._id} className="flex items-center justify-between bg-[var(--background-color)] border border-[var(--border-color)] rounded-2xl p-5 hover:border-[var(--primary-color)]/50 transition-all group">
+                <div className="flex items-center gap-5">
+                  <div className="bg-[var(--primary-color)]/10 w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Phone className="w-6 h-6 text-[var(--primary-color)]" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-800">{c.name}</p>
-                    <p className="text-sm text-gray-600">{c.phone} • {c.relationship}</p>
+                    <p className="font-bold text-[var(--text-color)] text-lg leading-none mb-1">{c.name}</p>
+                    <p className="text-sm font-medium text-[var(--text-muted)] uppercase tracking-wider">{c.relationship} • {c.phone}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => handleRemoveContact(c._id)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                  className="p-3 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
                   disabled={isLoading}
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="w-6 h-6" />
                 </button>
               </li>
             ))
           ) : (
-            <p className="text-gray-500 text-center py-4">No emergency contacts added yet</p>
+            <div className="text-center py-10 glass-panel rounded-2xl">
+              <p className="text-[var(--text-muted)] font-medium">Your emergency circle is empty. Add contacts to ensure quick response.</p>
+            </div>
           )}
         </ul>
       </div>
 
       {/* Change Password Section */}
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Lock className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-800">Change Password</h2>
+      <div className="bg-[var(--surface-color)] rounded-3xl shadow-xl p-6 sm:p-8 border border-[var(--border-color)]">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center">
+            <Lock className="w-6 h-6 text-amber-500" />
+          </div>
+          <h2 className="text-2xl font-extrabold text-[var(--text-color)] tracking-tight">Access Control</h2>
         </div>
 
-        <form onSubmit={handlePasswordSave} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+        <form onSubmit={handlePasswordSave} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-[var(--text-color)] opacity-80 uppercase tracking-wider ml-1">Current Password</label>
               <input
                 type="password"
                 name="currentPassword"
-                placeholder="Enter current password"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="••••••••"
+                className="w-full px-4 py-3 bg-[var(--background-color)] border border-[var(--border-color)] rounded-xl text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 transition-all"
                 value={passwords.currentPassword}
                 onChange={handlePasswordChange}
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-[var(--text-color)] opacity-80 uppercase tracking-wider ml-1">New Password</label>
               <input
                 type="password"
                 name="newPassword"
-                placeholder="Enter new password"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="••••••••"
+                className="w-full px-4 py-3 bg-[var(--background-color)] border border-[var(--border-color)] rounded-xl text-[var(--text-color)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)]/30 transition-all font-medium"
                 value={passwords.newPassword}
                 onChange={handlePasswordChange}
                 required
@@ -235,15 +243,10 @@ const ProfilePage = () => {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center gap-2"
+              className="px-8 py-3 bg-[var(--surface-hover)] border border-[var(--border-color)] text-[var(--text-color)] font-bold rounded-xl hover:bg-[var(--primary-color)] hover:text-white hover:border-transparent active:scale-95 transition-all shadow-sm"
               disabled={isLoading}
             >
-              {isLoading ? (
-                <Loader2 className="animate-spin w-4 h-4" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              Change Password
+              Update Security
             </button>
           </div>
         </form>
